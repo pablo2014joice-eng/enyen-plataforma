@@ -2,100 +2,133 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enyen - Comparador de Preços</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enyen - Plataforma</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
     <style>
-        :root { --primary: #007bff; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { color: var(--primary); text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .item { background: #fff; padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .btn-edit { background: #ffc107; width: auto; padding: 5px 10px; font-size: 12px; }
-        .btn-del { background: #dc3545; width: auto; padding: 5px 10px; font-size: 12px; margin-left: 5px; }
+        :root { --blue: #0047ab; --dark: #121212; --gray: #f4f4f4; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--gray); margin: 0; padding-bottom: 80px; }
+        .header { background: var(--blue); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .container { padding: 15px; }
+        #scanner-container { width: 100%; height: 250px; background: black; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; border: 3px solid var(--blue); }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-box { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #ddd; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
+        .btn-edit { background: #ffa500; margin-top: 5px; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--dark); display: flex; justify-content: space-around; padding: 15px 0; }
+        .nav-item { color: white; text-decoration: none; font-size: 12px; text-align: center; opacity: 0.6; }
+        .nav-item.active { opacity: 1; border-top: 2px solid var(--blue); padding-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>enyen</h1>
-    <p style="text-align:center;">Gerenciar Produtos/Produtores</p>
+<div class="header">
+    <strong>enyen</strong>
+    <span style="font-size: 10px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 5px;">ENYEN.COM</span>
+</div>
 
-    <div id="form-container">
-        <input type="hidden" id="edit-index">
-        <div class="form-group">
-            <input type="text" id="nome" placeholder="Nome do Produto/Produtor">
-        </div>
-        <div class="form-group">
-            <input type="number" id="preco" placeholder="Preço (R$)">
-        </div>
-        <button id="btn-salvar" onclick="salvarProduto()">Adicionar Produto</button>
+<div class="container">
+    <div id="scanner-container">
+        <video id="video"></video>
+    </div>
+    
+    <div class="form-box">
+        <h3 id="form-title">Cadastrar/Editar Produto</h3>
+        <input type="hidden" id="edit-id">
+        <input type="text" id="prod-barcode" placeholder="Código de Barras (ou use o scanner)">
+        <input type="text" id="prod-nome" placeholder="Nome do Produto">
+        <input type="number" id="prod-preco" placeholder="Preço (R$)">
+        <button id="btn-main" onclick="salvar()">Adicionar à Lista</button>
     </div>
 
-    <div id="lista-produtos" style="margin-top: 20px;"></div>
+    <h3 style="margin-top: 25px;">Meus Produtos</h3>
+    <div id="lista"></div>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active">SCANNER</div>
+    <div class="nav-item" onclick="alert('Histórico em breve!')">HISTÓRICO</div>
 </div>
 
 <script>
-    let produtos = JSON.parse(localStorage.getItem('enyen_prods')) || [];
+    let db = JSON.parse(localStorage.getItem('enyen_db')) || [];
+    const codeReader = new ZXing.BrowserMultiFormatReader();
 
-    function renderizar() {
-        const lista = document.getElementById('lista-produtos');
-        lista.innerHTML = '';
-        produtos.forEach((p, index) => {
-            lista.innerHTML += `
-                <div class="item">
-                    <div>
-                        <strong>${p.nome}</strong><br>
-                        <span>R$ ${p.preco}</span>
-                    </div>
-                    <div>
-                        <button class="btn-edit" onclick="prepararEdicao(${index})">Editar</button>
-                        <button class="btn-del" onclick="remover(${index})">X</button>
-                    </div>
+    function startScanner() {
+        codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+            if (result) {
+                document.getElementById('prod-barcode').value = result.text;
+                buscarOuAlertar(result.text);
+            }
+        });
+    }
+
+    function buscarOuAlertar(code) {
+        let p = db.find(item => item.barcode === code);
+        if (p) {
+            alert(`Produto Encontrado: ${p.nome} - R$ ${p.preco}`);
+        } else {
+            alert("Código lido: " + code + "\nProduto não cadastrado. Preencha os campos abaixo para salvar.");
+        }
+    }
+
+    function salvar() {
+        const barcode = document.getElementById('prod-barcode').value;
+        const nome = document.getElementById('prod-nome').value;
+        const preco = document.getElementById('prod-preco').value;
+        const editId = document.getElementById('edit-id').value;
+
+        if(!barcode || !nome || !preco) return alert("Preencha todos os campos!");
+
+        if(editId === "") {
+            db.push({ barcode, nome, preco });
+        } else {
+            db[editId] = { barcode, nome, preco };
+            document.getElementById('edit-id').value = "";
+            document.getElementById('btn-main').innerText = "Adicionar à Lista";
+        }
+
+        localStorage.setItem('enyen_db', JSON.stringify(db));
+        limparCampos();
+        render();
+    }
+
+    function render() {
+        const div = document.getElementById('lista');
+        div.innerHTML = '';
+        db.forEach((p, i) => {
+            div.innerHTML += `
+                <div class="card">
+                    <strong>${p.nome}</strong><br>
+                    <small>Cód: ${p.barcode}</small><br>
+                    <span style="color: var(--blue); font-weight: bold;">R$ ${p.preco}</span>
+                    <button class="btn-edit" onclick="prepararEdicao(${i})">EDITAR</button>
                 </div>
             `;
         });
-        localStorage.setItem('enyen_prods', JSON.stringify(produtos));
     }
 
-    function salvarProduto() {
-        const nome = document.getElementById('nome').value;
-        const preco = document.getElementById('preco').value;
-        const index = document.getElementById('edit-index').value;
-
-        if(!nome || !preco) return alert("Preencha tudo!");
-
-        if(index === "") {
-            produtos.push({nome, preco});
-        } else {
-            produtos[index] = {nome, preco};
-            document.getElementById('edit-index').value = "";
-            document.getElementById('btn-salvar').innerText = "Adicionar Produto";
-        }
-
-        document.getElementById('nome').value = "";
-        document.getElementById('preco').value = "";
-        renderizar();
-    }
-
-    function prepararEdicao(index) {
-        document.getElementById('nome').value = produtos[index].nome;
-        document.getElementById('preco').value = produtos[index].preco;
-        document.getElementById('edit-index').value = index;
-        document.getElementById('btn-salvar').innerText = "Salvar Alteração";
+    function prepararEdicao(i) {
+        document.getElementById('prod-barcode').value = db[i].barcode;
+        document.getElementById('prod-nome').value = db[i].nome;
+        document.getElementById('prod-preco').value = db[i].preco;
+        document.getElementById('edit-id').value = i;
+        document.getElementById('btn-main').innerText = "Salvar Alterações";
         window.scrollTo(0,0);
     }
 
-    function remover(index) {
-        if(confirm("Deseja excluir?")) {
-            produtos.splice(index, 1);
-            renderizar();
-        }
+    function limparCampos() {
+        document.getElementById('prod-barcode').value = "";
+        document.getElementById('prod-nome').value = "";
+        document.getElementById('prod-preco').value = "";
     }
 
-    renderizar();
+    window.onload = () => {
+        render();
+        startScanner();
+    };
 </script>
 
 </body>
