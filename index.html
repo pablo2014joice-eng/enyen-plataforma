@@ -1,135 +1,400 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Enyen - Plataforma</title>
+    <title>Enyen - Comparador de Preços</title>
+    <!-- Biblioteca de Scanner -->
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <style>
-        :root { --blue: #0047ab; --dark: #121212; --gray: #f4f4f4; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--gray); margin: 0; padding-bottom: 80px; }
-        .header { background: var(--blue); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .container { padding: 15px; }
-        #scanner-container { width: 100%; height: 250px; background: black; border-radius: 15px; overflow: hidden; position: relative; margin-bottom: 20px; border: 3px solid var(--blue); }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .form-box { background: #fff; padding: 15px; border-radius: 12px; border: 1px solid #ddd; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
-        .btn-edit { background: #ffa500; margin-top: 5px; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--dark); display: flex; justify-content: space-around; padding: 15px 0; }
-        .nav-item { color: white; text-decoration: none; font-size: 12px; text-align: center; opacity: 0.6; }
-        .nav-item.active { opacity: 1; border-top: 2px solid var(--blue); padding-top: 5px; }
+        :root {
+            --primary: #00a884; 
+            --dark-blue: #1c2b33;
+            --light-bg: #f0f4f8;
+            --white: #ffffff;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--light-bg);
+            margin: 0;
+            padding-bottom: 90px;
+            color: var(--dark-blue);
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: var(--white);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-svg {
+            width: 35px;
+            height: 35px;
+        }
+
+        .brand-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .container {
+            padding: 15px;
+            max-width: 500px;
+            margin: auto;
+        }
+
+        /* Scanner Box */
+        .scanner-section {
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            height: 280px;
+            box-shadow: var(--shadow);
+            margin-bottom: 15px;
+            border: 2px solid #ddd;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scanner-target {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 75%;
+            height: 45%;
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scan-line {
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+            position: absolute;
+            animation: moveScan 3s infinite linear;
+        }
+
+        @keyframes moveScan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            font-size: 11px;
+            text-align: center;
+            padding: 8px 0;
+            font-weight: bold;
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,168,132,0.2);
+        }
+
+        .btn-cam-trigger {
+            background: var(--dark-blue);
+        }
+
+        /* Formulário */
+        .card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid #eee;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            font-size: 16px;
+            background: #f9f9f9;
+        }
+
+        /* Itens na Lista */
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .prod-data b { display: block; font-size: 16px; }
+        .prod-data span { color: var(--primary); font-weight: 700; }
+
+        .actions { display: flex; gap: 8px; }
+        .btn-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <strong>enyen</strong>
-    <span style="font-size: 10px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 5px;">ENYEN.COM</span>
+    <div class="logo-wrapper">
+        <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 5 L85 20 V45 C85 70 50 90 50 90 C 50 90 15 70 15 45 V20 L50 5Z" fill="#00a884"/>
+            <path d="M35 40 H65 V48 H45 V55 H60 V63 H45 V70 H65 V78 H35 V40Z" fill="white" />
+        </svg>
+        <span class="brand-name">Enyen</span>
+    </div>
 </div>
 
 <div class="container">
-    <div id="scanner-container">
+    <button class="btn-action btn-cam-trigger" onclick="initScanner()">LIGAR CÂMERA DO SCANNER</button>
+
+    <div class="scanner-section">
         <video id="video"></video>
-    </div>
-    
-    <div class="form-box">
-        <h3 id="form-title">Cadastrar/Editar Produto</h3>
-        <input type="hidden" id="edit-id">
-        <input type="text" id="prod-barcode" placeholder="Código de Barras (ou use o scanner)">
-        <input type="text" id="prod-nome" placeholder="Nome do Produto">
-        <input type="number" id="prod-preco" placeholder="Preço (R$)">
-        <button id="btn-main" onclick="salvar()">Adicionar à Lista</button>
+        <div class="scanner-target">
+            <div class="scan-line"></div>
+        </div>
+        <div class="status-bar" id="status">Aguardando ativação...</div>
     </div>
 
-    <h3 style="margin-top: 25px;">Meus Produtos</h3>
-    <div id="lista"></div>
+    <div class="card">
+        <h3 class="card-title" id="form-label">Cadastrar Produto</h3>
+        <input type="hidden" id="edit-id" value="">
+        
+        <label>CÓDIGO EAN</label>
+        <input type="text" id="ean" placeholder="Aproxime o código da câmera...">
+
+        <label>NOME / MARCA</label>
+        <input type="text" id="name" placeholder="Ex: Arroz Tio João">
+
+        <label>PREÇO (R$)</label>
+        <input type="number" step="0.01" id="price" placeholder="0.00">
+
+        <button class="btn-action" id="btn-save" onclick="handleSave()">SALVAR NA LISTA</button>
+        <button id="btn-cancel" style="display:none; background:#ccc; margin-top:5px;" class="btn-action" onclick="resetForm()">CANCELAR</button>
+    </div>
+
+    <div id="list"></div>
 </div>
 
 <div class="nav-bar">
-    <div class="nav-item active">SCANNER</div>
-    <div class="nav-item" onclick="alert('Histórico em breve!')">HISTÓRICO</div>
+    <small style="color:var(--primary); font-weight:bold">SCANNER</small>
+    <small style="color:#aaa" onclick="alert('Em breve!')">HISTÓRICO</small>
+    <small style="color:#aaa">PERFIL</small>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('enyen_db')) || [];
+    let products = JSON.parse(localStorage.getItem('enyen_v3')) || [];
     const codeReader = new ZXing.BrowserMultiFormatReader();
+    let isLive = false;
 
-    function startScanner() {
-        codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-            if (result) {
-                document.getElementById('prod-barcode').value = result.text;
-                buscarOuAlertar(result.text);
+    // Função Principal para Iniciar Câmera
+    async function initScanner() {
+        if(isLive) return;
+        
+        const status = document.getElementById('status');
+        status.innerText = "Solicitando permissão...";
+
+        try {
+            const devices = await codeReader.listVideoInputDevices();
+            
+            // Filtra câmera traseira
+            const backCamera = devices.find(d => 
+                d.label.toLowerCase().includes('back') || 
+                d.label.toLowerCase().includes('traseira') ||
+                d.label.toLowerCase().includes('environment')
+            );
+
+            const deviceId = backCamera ? backCamera.deviceId : (devices[0] ? devices[0].deviceId : null);
+
+            if (!deviceId) {
+                status.innerText = "ERRO: Nenhuma câmera detectada.";
+                return;
             }
-        });
-    }
 
-    function buscarOuAlertar(code) {
-        let p = db.find(item => item.barcode === code);
-        if (p) {
-            alert(`Produto Encontrado: ${p.nome} - R$ ${p.preco}`);
-        } else {
-            alert("Código lido: " + code + "\nProduto não cadastrado. Preencha os campos abaixo para salvar.");
+            isLive = true;
+            status.innerText = "SCANNER ATIVO - Foque no código";
+
+            // Inicia decodificação com restrições de vídeo para melhor foco no mobile
+            codeReader.decodeFromVideoDevice(deviceId, 'video', (result, err) => {
+                if (result) {
+                    document.getElementById('ean').value = result.text;
+                    status.innerText = "LIDO COM SUCESSO!";
+                    if(navigator.vibrate) navigator.vibrate(200);
+                }
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                }
+            });
+
+        } catch (e) {
+            status.innerText = "ERRO: Permissão negada ou câmera em uso.";
+            alert("Por favor, autorize o uso da câmera nas configurações do seu navegador.");
         }
     }
 
-    function salvar() {
-        const barcode = document.getElementById('prod-barcode').value;
-        const nome = document.getElementById('prod-nome').value;
-        const preco = document.getElementById('prod-preco').value;
+    function handleSave() {
+        const ean = document.getElementById('ean').value;
+        const name = document.getElementById('name').value;
+        const price = document.getElementById('price').value;
         const editId = document.getElementById('edit-id').value;
 
-        if(!barcode || !nome || !preco) return alert("Preencha todos os campos!");
+        if(!name || !price) return alert("Preencha o nome e o preço!");
+
+        const obj = { ean, name, price: parseFloat(price).toFixed(2) };
 
         if(editId === "") {
-            db.push({ barcode, nome, preco });
+            products.unshift(obj);
         } else {
-            db[editId] = { barcode, nome, preco };
-            document.getElementById('edit-id').value = "";
-            document.getElementById('btn-main').innerText = "Adicionar à Lista";
+            products[editId] = obj;
+            resetForm();
         }
 
-        localStorage.setItem('enyen_db', JSON.stringify(db));
-        limparCampos();
+        localStorage.setItem('enyen_v3', JSON.stringify(products));
+        clearInputs();
         render();
     }
 
     function render() {
-        const div = document.getElementById('lista');
-        div.innerHTML = '';
-        db.forEach((p, i) => {
-            div.innerHTML += `
-                <div class="card">
-                    <strong>${p.nome}</strong><br>
-                    <small>Cód: ${p.barcode}</small><br>
-                    <span style="color: var(--blue); font-weight: bold;">R$ ${p.preco}</span>
-                    <button class="btn-edit" onclick="prepararEdicao(${i})">EDITAR</button>
+        const listDiv = document.getElementById('list');
+        listDiv.innerHTML = '<h3 style="margin-left:5px">Minha Lista</h3>';
+        
+        products.forEach((p, i) => {
+            listDiv.innerHTML += `
+                <div class="product-item">
+                    <div class="prod-data">
+                        <b>${p.name}</b>
+                        <span>R$ ${p.price}</span>
+                        <small style="display:block; font-size:10px; color:#999">EAN: ${p.ean || 'Manual'}</small>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-icon" style="background:#ffa000" onclick="edit(${i})">✎</button>
+                        <button class="btn-icon" style="background:#f44336" onclick="del(${i})">✕</button>
+                    </div>
                 </div>
             `;
         });
     }
 
-    function prepararEdicao(i) {
-        document.getElementById('prod-barcode').value = db[i].barcode;
-        document.getElementById('prod-nome').value = db[i].nome;
-        document.getElementById('prod-preco').value = db[i].preco;
+    function edit(i) {
+        const p = products[i];
+        document.getElementById('ean').value = p.ean;
+        document.getElementById('name').value = p.name;
+        document.getElementById('price').value = p.price;
         document.getElementById('edit-id').value = i;
-        document.getElementById('btn-main').innerText = "Salvar Alterações";
-        window.scrollTo(0,0);
+        document.getElementById('form-label').innerText = "Editando Produto";
+        document.getElementById('btn-save').innerText = "SALVAR ALTERAÇÕES";
+        document.getElementById('btn-cancel').style.display = "block";
+        window.scrollTo({top: 400, behavior: 'smooth'});
     }
 
-    function limparCampos() {
-        document.getElementById('prod-barcode').value = "";
-        document.getElementById('prod-nome').value = "";
-        document.getElementById('prod-preco').value = "";
+    function del(i) {
+        if(confirm("Excluir item?")) {
+            products.splice(i, 1);
+            localStorage.setItem('enyen_v3', JSON.stringify(products));
+            render();
+        }
     }
 
-    window.onload = () => {
-        render();
-        startScanner();
-    };
+    function resetForm() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('form-label').innerText = "Cadastrar Produto";
+        document.getElementById('btn-save').innerText = "SALVAR NA LISTA";
+        document.getElementById('btn-cancel').style.display = "none";
+        clearInputs();
+    }
+
+    function clearInputs() {
+        document.getElementById('ean').value = "";
+        document.getElementById('name').value = "";
+        document.getElementById('price').value = "";
+    }
+
+    window.onload = render;
 </script>
 
 </body>
 </html>
+
+```
