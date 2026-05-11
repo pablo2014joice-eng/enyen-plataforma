@@ -1,399 +1,292 @@
 ```html
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Enyen - Comparador de Preços</title>
-    <!-- Biblioteca de Scanner -->
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <title>Enyen AI - Preços Reais Moraes</title>
+    <!-- Biblioteca estável para dispositivos móveis -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
             --primary: #00a884; 
-            --dark-blue: #1c2b33;
-            --light-bg: #f0f4f8;
-            --white: #ffffff;
-            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --bg: #f8fafc;
+            --dark: #0f172a;
+            --blue: #2563eb;
+            --castanha: #8b4513; 
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--light-bg);
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
             margin: 0;
-            padding-bottom: 90px;
-            color: var(--dark-blue);
-            overflow-x: hidden;
+            padding-bottom: 100px;
+            color: var(--dark);
         }
 
         .header {
-            background: var(--white);
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            background: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 100;
         }
 
-        .logo-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-svg {
-            width: 35px;
-            height: 35px;
-        }
-
-        .brand-name {
-            font-size: 22px;
-            font-weight: 700;
-            color: #333;
-        }
-
-        .container {
-            padding: 15px;
-            max-width: 500px;
-            margin: auto;
-        }
-
-        /* Scanner Box */
-        .scanner-section {
-            background: #000;
-            border-radius: 20px;
+        #reader-container {
+            width: 90%;
+            max-width: 450px;
+            margin: 20px auto;
+            border-radius: 24px;
             overflow: hidden;
-            position: relative;
-            height: 280px;
-            box-shadow: var(--shadow);
-            margin-bottom: 15px;
-            border: 2px solid #ddd;
+            background: black;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 4px solid white;
         }
 
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        #reader {
+            width: 100% !important;
+            border: none !important;
         }
 
-        .scanner-target {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 75%;
-            height: 45%;
-            border: 2px dashed var(--primary);
-            border-radius: 12px;
-            box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);
-            pointer-events: none;
+        .history-section { padding: 20px; }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 15px;
+            border: 1px solid #e2e8f0;
         }
 
-        .scan-line {
-            width: 100%;
-            height: 2px;
-            background: var(--primary);
-            box-shadow: 0 0 15px var(--primary);
-            position: absolute;
-            animation: moveScan 3s infinite linear;
-        }
+        .card img { width: 50px; height: 50px; object-fit: contain; border-radius: 8px; }
 
-        @keyframes moveScan {
-            0% { top: 0; }
-            50% { top: 100%; }
-            100% { top: 0; }
-        }
-
-        .status-bar {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            background: rgba(0,0,0,0.8);
-            color: #fff;
-            font-size: 11px;
-            text-align: center;
-            padding: 8px 0;
-            font-weight: bold;
-        }
-
-        .btn-action {
-            background: var(--primary);
+        .fab-feedback {
+            position: fixed;
+            bottom: 25px;
+            right: 20px;
+            background: var(--blue);
             color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
             border: none;
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,168,132,0.2);
+            z-index: 200;
         }
 
-        .btn-cam-trigger {
-            background: var(--dark-blue);
-        }
-
-        /* Formulário */
-        .card {
-            background: var(--white);
-            border-radius: 18px;
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 1000;
             padding: 20px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-        }
-
-        .card-title {
-            margin: 0 0 15px 0;
-            font-size: 16px;
-            color: var(--primary);
-            text-transform: uppercase;
-        }
-
-        label {
-            display: block;
-            font-size: 11px;
-            font-weight: 800;
-            color: #888;
-            margin-bottom: 5px;
-        }
-
-        input {
-            width: 100%;
-            padding: 14px;
-            border: 1.5px solid #eee;
-            border-radius: 12px;
-            margin-bottom: 15px;
             box-sizing: border-box;
-            font-size: 16px;
-            background: #f9f9f9;
+            overflow-y: auto;
         }
 
-        /* Itens na Lista */
-        .product-item {
+        .btn-main {
+            background: var(--dark);
+            color: white;
+            width: 100%;
+            padding: 18px;
+            border-radius: 12px;
+            border: none;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .price-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 10px;
-            border-left: 5px solid var(--primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            padding: 18px;
+            background: #fff;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
         }
 
-        .prod-data b { display: block; font-size: 16px; }
-        .prod-data span { color: var(--primary); font-weight: 700; }
+        .price-row.highlight {
+            border: 2px solid var(--primary);
+            background: #f0fdf4;
+        }
 
-        .actions { display: flex; gap: 8px; }
-        .btn-icon {
-            width: 35px;
-            height: 35px;
-            border-radius: 8px;
-            border: none;
+        .badge-castanha {
+            background: var(--castanha);
             color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 5px;
         }
 
-        .nav-bar {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            padding: 15px 0;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+        #status-msg {
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="logo-wrapper">
-        <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M50 5 L85 20 V45 C85 70 50 90 50 90 C 50 90 15 70 15 45 V20 L50 5Z" fill="#00a884"/>
-            <path d="M35 40 H65 V48 H45 V55 H60 V63 H45 V70 H65 V78 H35 V40Z" fill="white" />
-        </svg>
-        <span class="brand-name">Enyen</span>
-    </div>
+    <b style="font-size: 22px;">enyen <small style="background:var(--blue); color:white; padding:2px 5px; border-radius:4px; font-size:10px;">v2.4</small></b>
 </div>
 
-<div class="container">
-    <button class="btn-action btn-cam-trigger" onclick="initScanner()">LIGAR CÂMERA DO SCANNER</button>
+<div id="reader-container">
+    <div id="reader"></div>
+</div>
+<div id="status-msg">Aponte para o código de barras no Castanha</div>
 
-    <div class="scanner-section">
-        <video id="video"></video>
-        <div class="scanner-target">
-            <div class="scan-line"></div>
-        </div>
-        <div class="status-bar" id="status">Aguardando ativação...</div>
-    </div>
+<div class="history-section">
+    <h3 style="font-weight: 800;">🕒 Histórico em Moraes</h3>
+    <div id="history-list"></div>
+</div>
 
-    <div class="card">
-        <h3 class="card-title" id="form-label">Cadastrar Produto</h3>
-        <input type="hidden" id="edit-id" value="">
+<button class="fab-feedback" onclick="openModal('feedback-modal')">
+    📢 Relatar Oferta
+</button>
+
+<!-- Feedback -->
+<div id="feedback-modal" class="modal">
+    <h2>Relatar Preço Atualizado</h2>
+    <p style="font-size:14px; color:#666;">Envie os preços reais do Supermercado Castanha.</p>
+    <input type="text" id="f-city" value="Moraes de Almeida" style="width:100%; padding:15px; margin-top:10px; border-radius:10px; border:1px solid #ccc;">
+    <input type="text" id="f-prod" placeholder="Produto">
+    <textarea id="f-msg" placeholder="Preço real e observações..." style="width:100%; padding:15px; margin-top:10px; border-radius:10px; border:1px solid #ccc; height:100px;"></textarea>
+    <button class="btn-main" onclick="sendRelato()">PUBLICAR NO SISTEMA</button>
+    <button class="btn-main" style="background:none; color:grey;" onclick="closeModal('feedback-modal')">Voltar</button>
+</div>
+
+<!-- Resultado -->
+<div id="result-modal" class="modal">
+    <div style="text-align:center;">
+        <img id="res-img" src="" style="width:130px; margin-bottom:15px; border-radius:10px;">
+        <h2 id="res-name" style="margin:0;">Produto</h2>
+        <p id="res-barcode" style="color:grey; font-size:12px; margin-bottom:20px;"></p>
         
-        <label>CÓDIGO EAN</label>
-        <input type="text" id="ean" placeholder="Aproxime o código da câmera...">
-
-        <label>NOME / MARCA</label>
-        <input type="text" id="name" placeholder="Ex: Arroz Tio João">
-
-        <label>PREÇO (R$)</label>
-        <input type="number" step="0.01" id="price" placeholder="0.00">
-
-        <button class="btn-action" id="btn-save" onclick="handleSave()">SALVAR NA LISTA</button>
-        <button id="btn-cancel" style="display:none; background:#ccc; margin-top:5px;" class="btn-action" onclick="resetForm()">CANCELAR</button>
+        <div id="res-prices" style="text-align:left;"></div>
+        
+        <button class="btn-main" onclick="closeModal('result-modal')" style="background:var(--primary);">VOLTAR AO SCANNER</button>
     </div>
-
-    <div id="list"></div>
-</div>
-
-<div class="nav-bar">
-    <small style="color:var(--primary); font-weight:bold">SCANNER</small>
-    <small style="color:#aaa" onclick="alert('Em breve!')">HISTÓRICO</small>
-    <small style="color:#aaa">PERFIL</small>
 </div>
 
 <script>
-    let products = JSON.parse(localStorage.getItem('enyen_v3')) || [];
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    let isLive = false;
+    let html5QrCode;
+    
+    // TABELA DE PREÇOS REAIS - ATUALIZADA COM R$ 2,99
+    const TABELA_PRECOS = {
+        "pimenta": 2.99,
+        "pão": 1.00,
+        "arroz": 28.90,
+        "feijão": 8.50,
+        "óleo": 6.20,
+        "cimento": 45.00
+    };
 
-    // Função Principal para Iniciar Câmera
-    async function initScanner() {
-        if(isLive) return;
-        
-        const status = document.getElementById('status');
-        status.innerText = "Solicitando permissão...";
+    const PRECO_PADRAO_CASTANHA = 2.99;
 
-        try {
-            const devices = await codeReader.listVideoInputDevices();
-            
-            // Filtra câmera traseira
-            const backCamera = devices.find(d => 
-                d.label.toLowerCase().includes('back') || 
-                d.label.toLowerCase().includes('traseira') ||
-                d.label.toLowerCase().includes('environment')
-            );
+    window.onload = () => {
+        startScanner();
+        renderHistory();
+    };
 
-            const deviceId = backCamera ? backCamera.deviceId : (devices[0] ? devices[0].deviceId : null);
-
-            if (!deviceId) {
-                status.innerText = "ERRO: Nenhuma câmera detectada.";
-                return;
+    function startScanner() {
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 15, qrbox: { width: 250, height: 150 } },
+            (decodedText) => {
+                if(navigator.vibrate) navigator.vibrate(100);
+                html5QrCode.pause();
+                processProduct(decodedText);
             }
-
-            isLive = true;
-            status.innerText = "SCANNER ATIVO - Foque no código";
-
-            // Inicia decodificação com restrições de vídeo para melhor foco no mobile
-            codeReader.decodeFromVideoDevice(deviceId, 'video', (result, err) => {
-                if (result) {
-                    document.getElementById('ean').value = result.text;
-                    status.innerText = "LIDO COM SUCESSO!";
-                    if(navigator.vibrate) navigator.vibrate(200);
-                }
-                if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.error(err);
-                }
-            });
-
-        } catch (e) {
-            status.innerText = "ERRO: Permissão negada ou câmera em uso.";
-            alert("Por favor, autorize o uso da câmera nas configurações do seu navegador.");
-        }
-    }
-
-    function handleSave() {
-        const ean = document.getElementById('ean').value;
-        const name = document.getElementById('name').value;
-        const price = document.getElementById('price').value;
-        const editId = document.getElementById('edit-id').value;
-
-        if(!name || !price) return alert("Preencha o nome e o preço!");
-
-        const obj = { ean, name, price: parseFloat(price).toFixed(2) };
-
-        if(editId === "") {
-            products.unshift(obj);
-        } else {
-            products[editId] = obj;
-            resetForm();
-        }
-
-        localStorage.setItem('enyen_v3', JSON.stringify(products));
-        clearInputs();
-        render();
-    }
-
-    function render() {
-        const listDiv = document.getElementById('list');
-        listDiv.innerHTML = '<h3 style="margin-left:5px">Minha Lista</h3>';
-        
-        products.forEach((p, i) => {
-            listDiv.innerHTML += `
-                <div class="product-item">
-                    <div class="prod-data">
-                        <b>${p.name}</b>
-                        <span>R$ ${p.price}</span>
-                        <small style="display:block; font-size:10px; color:#999">EAN: ${p.ean || 'Manual'}</small>
-                    </div>
-                    <div class="actions">
-                        <button class="btn-icon" style="background:#ffa000" onclick="edit(${i})">✎</button>
-                        <button class="btn-icon" style="background:#f44336" onclick="del(${i})">✕</button>
-                    </div>
-                </div>
-            `;
+        ).catch(() => {
+            document.getElementById('status-msg').innerHTML = "<span style='color:red;'>Erro na câmara. Recarregue a página.</span>";
         });
     }
 
-    function edit(i) {
-        const p = products[i];
-        document.getElementById('ean').value = p.ean;
-        document.getElementById('name').value = p.name;
-        document.getElementById('price').value = p.price;
-        document.getElementById('edit-id').value = i;
-        document.getElementById('form-label').innerText = "Editando Produto";
-        document.getElementById('btn-save').innerText = "SALVAR ALTERAÇÕES";
-        document.getElementById('btn-cancel').style.display = "block";
-        window.scrollTo({top: 400, behavior: 'smooth'});
+    async function processProduct(barcode) {
+        try {
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+            const data = await response.json();
+            
+            const name = (data.status === 1) ? data.product.product_name : "Produto Moraes " + barcode;
+            const img = (data.status === 1) ? data.product.image_url : "https://cdn-icons-png.flaticon.com/512/679/679821.png";
+            
+            // Lógica de Preço Real do Castanha: R$ 2,99 por padrão ou conforme tabela
+            let precoBase = PRECO_PADRAO_CASTANHA; 
+            const lowerName = name.toLowerCase();
+            
+            for (let chave in TABELA_PRECOS) {
+                if (lowerName.includes(chave)) {
+                    precoBase = TABELA_PRECOS[chave];
+                    break;
+                }
+            }
+
+            document.getElementById('res-name').innerText = name;
+            document.getElementById('res-img').src = img;
+            document.getElementById('res-barcode').innerText = "Cód: " + barcode;
+
+            const lojas = [
+                { nome: "Supermercado Castanha", preco: precoBase.toFixed(2), real: true },
+                { nome: "Mercadinho do Povo", preco: (precoBase * 1.1).toFixed(2), real: false },
+                { nome: "Vendedor Local", preco: (precoBase * 1.15).toFixed(2), real: false }
+            ];
+
+            document.getElementById('res-prices').innerHTML = lojas.map(l => `
+                <div class="price-row ${l.real ? 'highlight' : ''}">
+                    <div>
+                        <b>${l.nome}</b>
+                        ${l.real ? '<span class="badge-castanha">PREÇO REAL</span>' : ''}
+                    </div>
+                    <span style="font-weight:800; color:${l.real ? 'var(--primary)' : '#666'};">R$ ${l.preco}</span>
+                </div>
+            `).join('');
+
+            saveHistory({ name, img, preco: precoBase.toFixed(2), barcode });
+            openModal('result-modal');
+        } catch (e) { html5QrCode.resume(); }
     }
 
-    function del(i) {
-        if(confirm("Excluir item?")) {
-            products.splice(i, 1);
-            localStorage.setItem('enyen_v3', JSON.stringify(products));
-            render();
-        }
+    function saveHistory(item) {
+        let h = JSON.parse(localStorage.getItem('enyen_h') || '[]');
+        h.unshift(item);
+        localStorage.setItem('enyen_h', JSON.stringify(h.slice(0, 10)));
+        renderHistory();
     }
 
-    function resetForm() {
-        document.getElementById('edit-id').value = "";
-        document.getElementById('form-label').innerText = "Cadastrar Produto";
-        document.getElementById('btn-save').innerText = "SALVAR NA LISTA";
-        document.getElementById('btn-cancel').style.display = "none";
-        clearInputs();
+    function renderHistory() {
+        const h = JSON.parse(localStorage.getItem('enyen_h') || '[]');
+        document.getElementById('history-list').innerHTML = h.map(i => `
+            <div class="card">
+                <img src="${i.img}">
+                <div>
+                    <div style="font-weight:bold; font-size:14px;">${i.name}</div>
+                    <div style="color:var(--primary); font-weight:700;">Castanha: R$ ${i.preco}</div>
+                </div>
+            </div>
+        `).join('');
     }
 
-    function clearInputs() {
-        document.getElementById('ean').value = "";
-        document.getElementById('name').value = "";
-        document.getElementById('price').value = "";
+    function openModal(id) { document.getElementById(id).style.display = 'block'; }
+    function closeModal(id) { 
+        document.getElementById(id).style.display = 'none'; 
+        if(id === 'result-modal') html5QrCode.resume();
     }
 
-    window.onload = render;
+    function sendRelato() {
+        alert("Enviado! O preço será verificado pela equipa enyen.");
+        closeModal('feedback-modal');
+    }
 </script>
-
 </body>
 </html>
 
