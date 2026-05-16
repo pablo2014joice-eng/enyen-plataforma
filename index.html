@@ -1,226 +1,358 @@
-```react
-import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  onAuthStateChanged, 
-  signOut
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  doc, 
-  getDoc, 
-  setDoc 
-} from 'firebase/firestore';
-import { 
-  Camera, User, Sparkles, LogOut, ShieldCheck, Chrome, AlertCircle, Search, ShoppingBag
-} from 'lucide-react';
+```html
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>enyen - Scanner & IA</title>
+    <!-- Bibliotecas Necessárias -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary: #00a884; 
+            --bg: #ffffff;
+            --surface: #f3f4f6;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --ai-purple: #8b5cf6;
+            --ai-gradient: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+        }
 
-// Credenciais oficiais extraídas da tua imagem 1778935605276.jpeg
-const firebaseConfig = {
-  apiKey: "AIzaSyCcfC3yOgkaG6kJn_KommwOWmXUpn9eAv8",
-  authDomain: "enyen-62a5a.firebaseapp.com",
-  projectId: "enyen-62a5a",
-  storageBucket: "enyen-62a5a.firebasestorage.app",
-  messagingSenderId: "1071896211275",
-  appId: "1:1071896211275:web:06594db6eb2bda4c042ce",
-  measurementId: "G-R1VQSD RZL8"
-};
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #000;
+            margin: 0;
+            color: var(--text-main);
+            overflow: hidden;
+            touch-action: none;
+        }
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+        /* BARRA SUPERIOR */
+        .top-bar {
+            padding: 15px 20px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 50;
+        }
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('enyen'); 
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleGoogleLogin = async () => {
-    setErrorMsg(null);
-    try {
-      googleProvider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithPopup(auth, googleProvider);
-      setActiveTab('profile');
-    } catch (error) {
-      console.error("Erro:", error.code);
-      if (error.code === 'auth/unauthorized-domain') {
-        setErrorMsg("Domínio não autorizado. Verifique as configurações do Firebase.");
-      } else {
-        setErrorMsg("Erro ao abrir janela de login. Tente no Chrome.");
-      }
-    }
-  };
-
-  if (loading) return (
-    <div className="h-screen bg-black flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col h-screen w-full bg-[#050505] text-white font-sans overflow-hidden">
-      
-      {/* HEADER */}
-      <header className="p-6 pt-10 flex justify-between items-center bg-black/50 backdrop-blur-md border-b border-white/5">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-black italic text-[#00a884] tracking-tighter uppercase">enyen</h1>
-          <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Moraes de Almeida</span>
-        </div>
-        <div className="p-2 bg-zinc-900 rounded-xl border border-white/5">
-          <Sparkles size={18} className="text-[#00a884]" />
-        </div>
-      </header>
-
-      {/* CONTEÚDO */}
-      <main className="flex-1 relative overflow-y-auto">
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
         
-        {/* LENTE / SCANNER */}
-        {activeTab === 'enyen' && (
-          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-64 h-64 border-2 border-dashed border-[#00a884]/30 rounded-[40px] flex items-center justify-center relative mb-8">
-              <Camera size={48} className="text-[#00a884] opacity-50" />
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#00a884] rounded-tl-2xl"></div>
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#00a884] rounded-br-2xl"></div>
-            </div>
-            <h2 className="text-lg font-bold italic uppercase tracking-widest">Lente Enyen</h2>
-            <p className="text-zinc-500 text-[10px] mt-2 uppercase tracking-tighter">Aponte para o QR Code do produto</p>
-          </div>
-        )}
+        .user-badge:active { transform: scale(0.95); }
 
-        {/* EXPLORAR */}
-        {activeTab === 'explorar' && (
-          <div className="p-6">
-            <h2 className="text-xl font-black uppercase italic mb-6">Preços na Vila</h2>
-            <div className="space-y-4">
-              <div className="bg-zinc-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center">
-                <div className="flex gap-3 items-center">
-                  <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center"><ShoppingBag size={18}/></div>
-                  <div>
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase">Mercado Central</p>
-                    <p className="font-bold text-sm">Arroz 5kg</p>
-                  </div>
-                </div>
-                <p className="font-black text-[#00a884]">R$ 29,90</p>
-              </div>
-            </div>
-          </div>
-        )}
+        .google-icon { width: 18px; height: 18px; }
+        .user-photo { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--primary); }
 
-        {/* PERFIL / LOGIN */}
-        {activeTab === 'profile' && (
-          <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-            {!user ? (
-              <div className="w-full max-w-xs animate-in fade-in zoom-in duration-300">
-                <div className="w-20 h-20 bg-zinc-900 rounded-[30px] flex items-center justify-center mx-auto mb-8 border border-white/10">
-                  <Chrome size={40} className="text-[#00a884]" />
-                </div>
-                <h2 className="text-2xl font-black italic uppercase mb-2">Entrar na Rede</h2>
-                <p className="text-zinc-500 text-[9px] uppercase tracking-widest mb-10 leading-relaxed">
-                  Conecta-te para ver e partilhar os melhores preços de Moraes de Almeida.
-                </p>
+        /* SCANNER */
+        .scanner-container {
+            position: fixed;
+            top: 75px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 75px);
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-                {errorMsg && (
-                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400 text-[10px] text-left">
-                    <AlertCircle size={16} className="shrink-0" />
-                    <span>{errorMsg}</span>
-                  </div>
-                )}
+        #reader { width: 100% !important; height: 100% !important; border: none !important; }
 
-                <button 
-                  onClick={handleGoogleLogin}
-                  className="w-full py-4 bg-white text-black rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-white/5"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                  Login com Google
-                </button>
-              </div>
-            ) : (
-              <div className="w-full animate-in slide-in-from-bottom duration-500">
-                <div className="relative inline-block mb-6">
-                  <div className="w-24 h-24 rounded-[40px] overflow-hidden border-2 border-[#00a884] p-1">
-                    <img src={user.photoURL} className="w-full h-full object-cover rounded-[35px]" alt="perfil" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 bg-[#00a884] p-1.5 rounded-xl border-4 border-black">
-                    <ShieldCheck size={14} className="text-white" />
-                  </div>
-                </div>
-                <h2 className="text-2xl font-black italic uppercase tracking-tighter">{user.displayName}</h2>
-                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">{user.email}</p>
-                
-                <div className="mt-10 grid grid-cols-2 gap-4">
-                  <div className="bg-zinc-900/50 p-6 rounded-[32px] border border-white/5">
-                    <p className="text-xl font-black italic">0</p>
-                    <p className="text-[7px] text-zinc-600 font-bold uppercase tracking-widest">Pontos</p>
-                  </div>
-                  <div className="bg-zinc-900/50 p-6 rounded-[32px] border border-white/5">
-                    <p className="text-xl font-black italic">1</p>
-                    <p className="text-[7px] text-zinc-600 font-bold uppercase tracking-widest">Rank</p>
-                  </div>
-                </div>
+        .scan-region {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%);
+            pointer-events: none;
+            z-index: 100;
+        }
 
-                <button 
-                  onClick={() => signOut(auth)}
-                  className="mt-12 flex items-center justify-center gap-2 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] mx-auto opacity-50 hover:opacity-100 transition-opacity"
-                >
-                  <LogOut size={16} /> Sair da Conta
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+        .lente-quadrada {
+            width: 280px;
+            height: 220px;
+            position: relative;
+            box-shadow: 0 0 0 2000px rgba(0,0,0,0.7); 
+            border-radius: 24px;
+        }
 
-      {/* BARRA DE NAVEGAÇÃO */}
-      <nav className="h-24 bg-black border-t border-white/5 flex items-center justify-around px-8 pb-4">
-        <button 
-          onClick={() => setActiveTab('explorar')}
-          className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'explorar' ? 'text-white' : 'text-zinc-600'}`}
-        >
-          <Search size={22} strokeWidth={activeTab === 'explorar' ? 3 : 2} />
-          <span className="text-[7px] font-black uppercase tracking-tighter">Explorar</span>
-        </button>
+        .corner {
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            border: 6px solid #ffffff;
+        }
+        .tl { top: -3px; left: -3px; border-right: 0; border-bottom: 0; border-top-left-radius: 24px; }
+        .tr { top: -3px; right: -3px; border-left: 0; border-bottom: 0; border-top-right-radius: 24px; }
+        .bl { bottom: -3px; left: -3px; border-right: 0; border-top: 0; border-bottom-left-radius: 24px; }
+        .br { bottom: -3px; right: -3px; border-left: 0; border-top: 0; border-bottom-right-radius: 24px; }
 
-        <button 
-          onClick={() => setActiveTab('enyen')}
-          className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-2xl -mt-6 border ${activeTab === 'enyen' ? 'bg-[#00a884] border-white/20 shadow-[#00a884]/40 rotate-0' : 'bg-zinc-900 border-white/5 rotate-45 text-zinc-500'}`}
-        >
-          <Camera size={24} className={activeTab === 'enyen' ? 'rotate-0' : '-rotate-45'} />
-        </button>
+        /* BOTÃO IA */
+        .ai-fab {
+            position: fixed;
+            bottom: 110px;
+            right: 20px;
+            background: var(--ai-gradient);
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 26px;
+            z-index: 300;
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse-ai 2s infinite;
+        }
 
-        <button 
-          onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'profile' ? 'text-white' : 'text-zinc-600'}`}
-        >
-          {user ? (
-            <div className={`w-6 h-6 rounded-lg overflow-hidden border-2 ${activeTab === 'profile' ? 'border-[#00a884]' : 'border-transparent opacity-50'}`}>
-              <img src={user.photoURL} className="w-full h-full object-cover" alt="u" />
-            </div>
-          ) : (
-            <User size={22} strokeWidth={activeTab === 'profile' ? 3 : 2} />
-          )}
-          <span className="text-[7px] font-black uppercase tracking-tighter">Conta</span>
-        </button>
-      </nav>
+        @keyframes pulse-ai {
+            0% { transform: scale(1); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* MODAL IA */
+        .ai-launch-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(8, 8, 12, 0.99);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+        .ai-launch-modal.active { display: flex; }
+
+        .countdown { display: flex; gap: 12px; margin: 35px 0; }
+        .count-item {
+            display: flex; flex-direction: column; min-width: 65px;
+            background: rgba(255,255,255,0.05); padding: 15px 5px;
+            border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .count-num { font-size: 28px; font-weight: 900; }
+        .count-label { font-size: 10px; color: #aaa; text-transform: uppercase; margin-top: 5px; }
+
+        .btn-notify {
+            background: #fff; color: #000; padding: 20px 40px;
+            border-radius: 50px; font-weight: 900; border: none;
+            width: 90%; font-size: 16px; margin-bottom: 25px;
+        }
+
+        /* PAINEL INFERIOR */
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #fff;
+            height: 80vh;
+            z-index: 200;
+            border-radius: 35px 35px 0 0;
+            transform: translateY(calc(80vh - 95px));
+            transition: transform 0.4s cubic-bezier(0.1, 0.5, 0.1, 1);
+        }
+        .bottom-sheet.open { transform: translateY(0); }
+
+        .handle-area { padding: 18px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .handle-bar { width: 45px; height: 6px; background: #e5e7eb; border-radius: 10px; margin-bottom: 10px; }
+
+        .tool-btn {
+            width: 65px; height: 65px;
+            border-radius: 22px; border: none;
+            background: var(--surface); font-size: 24px;
+            display: flex; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div>
+        <b style="font-size: 24px; color: var(--primary); letter-spacing: -1px;">enyen</b>
+        <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 900;">Moraes de Almeida, PA</div>
     </div>
-  );
-}
+    
+    <div class="user-badge" id="loginBtn">
+        <svg id="googleIcon" class="google-icon" viewBox="0 0 24 24">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <img id="userPhoto" class="user-photo" src="" style="display:none;">
+        <span id="userName">Entrar</span>
+    </div>
+</div>
+
+<div class="scanner-container">
+    <div id="reader"></div>
+    <div class="scan-region">
+        <div class="lente-quadrada">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+        </div>
+    </div>
+</div>
+
+<button class="ai-fab" id="openAi">✨</button>
+
+<div class="ai-launch-modal" id="aiModal">
+    <div style="background: var(--ai-gradient); padding: 8px 16px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px;">LANÇAMENTO EXCLUSIVO</div>
+    <h1 style="font-size: 36px; margin: 20px 0 10px; font-weight: 900; background: var(--ai-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">enyen Intelligence</h1>
+    <p style="color: #888; font-size: 15px;">A IA que encontra ofertas em Moraes de Almeida.</p>
+    
+    <div class="countdown">
+        <div class="count-item"><span class="count-num" id="days">00</span><span class="count-label">Dias</span></div>
+        <div class="count-item"><span class="count-num" id="hours">00</span><span class="count-label">Horas</span></div>
+        <div class="count-item"><span class="count-num" id="mins">00</span><span class="count-label">Min</span></div>
+        <div class="count-item"><span class="count-num" id="secs" style="color: var(--ai-purple);">00</span><span class="count-label">Seg</span></div>
+    </div>
+
+    <button class="btn-notify" id="btnNotify">NOTIFICAR-ME</button>
+    <button onclick="document.getElementById('aiModal').classList.remove('active')" style="background:none; border:none; color:#666; font-size: 14px; font-weight: 700;">VOLTAR</button>
+</div>
+
+<div class="bottom-sheet" id="sheet">
+    <div class="handle-area" id="handle">
+        <div class="handle-bar"></div>
+        <span style="font-size: 12px; font-weight: 900; color: var(--text-muted); text-transform: uppercase;">Ferramentas</span>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 25px; padding: 25px;">
+        <button class="tool-btn" onclick="toggleFlash()">🔦</button>
+        <button class="tool-btn" onclick="location.reload()">🔄</button>
+        <button class="tool-btn" onclick="toggleZoom()">🔍</button>
+    </div>
+    <div id="history" style="padding: 30px; color: #999; font-size: 13px; text-align: center;">
+        Inicia sessão para sincronizar scans.
+    </div>
+</div>
+
+<script>
+    // --- CONFIGURAÇÃO FIREBASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCcfC3yOgkaG6kJn_KommwOWmXUpn9eAv8",
+        authDomain: "enyen-62a5a.firebaseapp.com",
+        projectId: "enyen-62a5a",
+        storageBucket: "enyen-62a5a.firebasestorage.app",
+        messagingSenderId: "1071896211275",
+        appId: "1:1071896211275:web:06594db6eb2bda4c042ce"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    let scanner;
+    let flash = false;
+
+    window.onload = () => {
+        scanner = new Html5Qrcode("reader");
+        startCamera();
+        
+        document.getElementById('handle').onclick = () => document.getElementById('sheet').classList.toggle('open');
+        document.getElementById('openAi').onclick = () => document.getElementById('aiModal').classList.add('active');
+
+        // LOGIN COM REDIRECT (MAIS FIÁVEL)
+        document.getElementById('loginBtn').onclick = () => {
+            if (!auth.currentUser) {
+                // Tentamos primeiro o PopUp, se falhar ou estivermos em mobile, usamos Redirect
+                auth.signInWithPopup(provider).catch(error => {
+                    console.log("Pop-up bloqueado, a tentar Redirect...", error.code);
+                    auth.signInWithRedirect(provider);
+                });
+            } else {
+                if(confirm("Sair da conta?")) auth.signOut();
+            }
+        };
+
+        // Capturar o resultado do Redirect quando a página volta
+        auth.getRedirectResult().then(result => {
+            if (result.user) console.log("Login via Redirect efetuado!");
+        }).catch(err => {
+            if(err.code === 'auth/unauthorized-domain') {
+                alert("ERRO: Este domínio não está autorizado no Firebase. Adicione " + window.location.hostname + " nas definições de 'Authorized Domains'.");
+            }
+        });
+
+        auth.onAuthStateChanged(user => {
+            const nameSpan = document.getElementById('userName');
+            const photoImg = document.getElementById('userPhoto');
+            const googleIcon = document.getElementById('googleIcon');
+            
+            if (user) {
+                nameSpan.innerText = user.displayName.split(' ')[0];
+                photoImg.src = user.photoURL;
+                photoImg.style.display = 'block';
+                googleIcon.style.display = 'none';
+                document.getElementById('history').innerHTML = "<b>Sincronizado com Moraes de Almeida</b>";
+            } else {
+                nameSpan.innerText = "Entrar";
+                photoImg.style.display = 'none';
+                googleIcon.style.display = 'block';
+            }
+        });
+
+        setupCountdown();
+    };
+
+    function startCamera() {
+        scanner.start({ facingMode: "environment" }, { fps: 30 }, (code) => {
+            console.log("Scan:", code);
+        }).catch(() => {});
+    }
+
+    function toggleFlash() {
+        flash = !flash;
+        scanner.applyVideoConstraints({ advanced: [{ torch: flash }] }).catch(() => {});
+    }
+
+    function toggleZoom() {
+        const video = document.querySelector('video');
+        if(video) video.style.transform = video.style.transform === "scale(1.6)" ? "scale(1)" : "scale(1.6)";
+    }
+
+    function setupCountdown() {
+        let launchTime = localStorage.getItem('enyen_launch_v7') || (new Date().getTime() + (11 * 24 * 60 * 60 * 1000));
+        localStorage.setItem('enyen_launch_v7', launchTime);
+        setInterval(() => {
+            const diff = launchTime - new Date().getTime();
+            if (diff <= 0) return;
+            document.getElementById('days').innerText = Math.floor(diff / 86400000).toString().padStart(2, '0');
+            document.getElementById('hours').innerText = Math.floor((diff % 86400000) / 3600000).toString().padStart(2, '0');
+            document.getElementById('mins').innerText = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            document.getElementById('secs').innerText = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+        }, 1000);
+    }
+</script>
+
+</body>
+</html>
 
 ```
