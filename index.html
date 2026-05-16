@@ -1,349 +1,146 @@
-```html
-<!DOCTYPE html>
-<html lang="pt-pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>enyen - Scanner & AI</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        :root {
-            --primary: #00a884; 
-            --bg: #ffffff;
-            --surface: #f3f4f6;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --ai-purple: #8b5cf6;
-            --ai-gradient: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
-        }
+```react
+import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  onAuthStateChanged, 
+  signOut
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  setDoc 
+} from 'firebase/firestore';
+import { 
+  Camera, Users, User, Sparkles, LogOut, ShieldCheck, Chrome, AlertCircle
+} from 'lucide-react';
 
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: #000;
-            margin: 0;
-            color: var(--text-main);
-            overflow: hidden;
-            touch-action: none;
-        }
+// Credenciais baseadas nas tuas imagens do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCcfC3yOgkaG6kJn_KommwOWmXUpn9eAv8",
+  authDomain: "enyen-62a5a.firebaseapp.com",
+  projectId: "enyen-62a5a",
+  storageBucket: "enyen-62a5a.firebasestorage.app",
+  messagingSenderId: "1071896211275",
+  appId: "1:1071896211275:web:06594db6eb2bda4c042ce",
+  measurementId: "G-R1VQSD RZL8"
+};
 
-        .top-bar {
-            padding: 15px 20px;
-            background: #fff;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            z-index: 50;
-        }
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
-        .scanner-container {
-            position: fixed;
-            top: 70px;
-            left: 0;
-            width: 100%;
-            height: calc(100% - 70px);
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+const App = () => {
+  const [activeTab, setActiveTab] = useState('enyen'); 
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-        #reader {
-            width: 100% !important;
-            height: 100% !important;
-            border: none !important;
-        }
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-        /* LENTE ÚNICA E CENTRALIZADA */
-        .scan-region {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -60%);
-            pointer-events: none;
-            z-index: 100;
-        }
+  const handleGoogleLogin = async () => {
+    setErrorMsg(null);
+    try {
+      // Força a seleção de conta para evitar loops
+      googleProvider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, googleProvider);
+      setActiveTab('profile');
+    } catch (error) {
+      console.error("Erro Firebase:", error.code);
+      if (error.code === 'auth/unauthorized-domain') {
+        setErrorMsg("Este domínio ainda não foi autorizado no Firebase. Aguarda 5 min.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setErrorMsg("O teu browser bloqueou a janela de login. Ativa os pop-ups.");
+      } else {
+        setErrorMsg("Erro ao ligar ao Google. Tenta abrir no Chrome.");
+      }
+    }
+  };
 
-        .lente-quadrada {
-            width: 280px;
-            height: 220px;
-            position: relative;
-            box-shadow: 0 0 0 2000px rgba(0,0,0,0.7); 
-            border-radius: 16px;
-        }
-
-        .corner {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border: 6px solid #ffffff;
-        }
-        .tl { top: -3px; left: -3px; border-right: 0; border-bottom: 0; border-top-left-radius: 16px; }
-        .tr { top: -3px; right: -3px; border-left: 0; border-bottom: 0; border-top-right-radius: 16px; }
-        .bl { bottom: -3px; left: -3px; border-right: 0; border-top: 0; border-bottom-left-radius: 16px; }
-        .br { bottom: -3px; right: -3px; border-left: 0; border-top: 0; border-bottom-right-radius: 16px; }
-
-        /* BOTÃO IA - BAIXO E ERGONÓMICO */
-        .ai-fab {
-            position: fixed;
-            bottom: 110px;
-            right: 20px;
-            background: var(--ai-gradient);
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            border: none;
-            color: white;
-            font-size: 24px;
-            z-index: 300;
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: pulse-ai 2s infinite;
-        }
-
-        @keyframes pulse-ai {
-            0% { transform: scale(1); }
-            70% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        /* MODAL COM CONTADOR REAL */
-        .ai-launch-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 10, 15, 0.98);
-            z-index: 1000;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            padding: 30px;
-            text-align: center;
-            backdrop-filter: blur(15px);
-        }
-        .ai-launch-modal.active { display: flex; }
-
-        .countdown {
-            display: flex;
-            gap: 12px;
-            margin: 30px 0;
-        }
-
-        .count-item {
-            display: flex;
-            flex-direction: column;
-            min-width: 65px;
-            background: rgba(255,255,255,0.05);
-            padding: 12px 5px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .count-num {
-            font-size: 26px;
-            font-weight: 900;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .count-label {
-            font-size: 9px;
-            color: #888;
-            text-transform: uppercase;
-            margin-top: 4px;
-            letter-spacing: 1px;
-        }
-
-        .btn-notify {
-            background: #fff;
-            color: #000;
-            padding: 18px 40px;
-            border-radius: 40px;
-            font-weight: 800;
-            border: none;
-            width: 85%;
-            font-size: 16px;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-        }
-
-        .btn-notify.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        /* PAINEL INFERIOR */
-        .bottom-sheet {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: #fff;
-            height: 80vh;
-            z-index: 200;
-            border-radius: 30px 30px 0 0;
-            transform: translateY(calc(80vh - 90px));
-            transition: transform 0.4s cubic-bezier(0.1, 0.5, 0.1, 1);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
-        }
-        .bottom-sheet.open { transform: translateY(0); }
-
-        .handle-area { padding: 15px; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-        .handle-bar { width: 40px; height: 5px; background: #e5e7eb; border-radius: 10px; margin-bottom: 8px; }
-
-        .toast {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-150px);
-            background: var(--primary);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 40px;
-            font-weight: 700;
-            z-index: 2000;
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(0, 168, 132, 0.4);
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); }
-    </style>
-</head>
-<body>
-
-<div class="top-bar">
-    <div>
-        <b style="font-size: 22px; color: var(--primary);">enyen</b>
-        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Moraes de Almeida, PA</div>
+  if (loading) return (
+    <div className="h-screen bg-black flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin"></div>
     </div>
-</div>
+  );
 
-<div class="scanner-container">
-    <div id="reader"></div>
-    <div class="scan-region">
-        <div class="lente-quadrada">
-            <div class="corner tl"></div>
-            <div class="corner tr"></div>
-            <div class="corner bl"></div>
-            <div class="corner br"></div>
-        </div>
-    </div>
-</div>
-
-<button class="ai-fab" id="openAi">✨</button>
-
-<div class="ai-launch-modal" id="aiModal">
-    <div style="background: var(--ai-gradient); padding: 8px 16px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 1px;">LANÇAMENTO EXCLUSIVO</div>
-    <h1 style="font-size: 32px; margin: 15px 0 5px; background: var(--ai-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900;">enyen Intelligence</h1>
-    <p style="color: #777; font-size: 14px; max-width: 260px;">A IA que encontra o melhor preço para ti em segundos.</p>
-    
-    <div class="countdown">
-        <div class="count-item"><span class="count-num" id="days">00</span><span class="count-label">Dias</span></div>
-        <div class="count-item"><span class="count-num" id="hours">00</span><span class="count-label">Horas</span></div>
-        <div class="count-item"><span class="count-num" id="mins">00</span><span class="count-label">Min</span></div>
-        <div class="count-item"><span class="count-num" id="secs" style="color: var(--ai-purple);">00</span><span class="count-label">Seg</span></div>
-    </div>
-
-    <button class="btn-notify" id="btnNotify">NOTIFICAR-ME ATIVA</button>
-    <button onclick="document.getElementById('aiModal').classList.remove('active')" style="background:none; border:none; color:#555; font-size: 13px; font-weight: 600;">VOLTAR AO SCANNER</button>
-</div>
-
-<div id="toast" class="toast">✅ Notificação Ativada!</div>
-
-<div class="bottom-sheet" id="sheet">
-    <div class="handle-area" id="handle">
-        <div class="handle-bar"></div>
-        <span style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Histórico e Ferramentas</span>
-    </div>
-    
-    <div style="display: flex; justify-content: center; gap: 20px; padding: 20px;">
-        <button onclick="toggleFlash()" style="width:55px;height:55px;border-radius:50%;border:none;background:var(--surface);font-size:22px;">🔦</button>
-        <button onclick="location.reload()" style="width:55px;height:55px;border-radius:50%;border:none;background:var(--surface);font-size:22px;">🔄</button>
-        <button onclick="toggleZoom()" style="width:55px;height:55px;border-radius:50%;border:none;background:var(--surface);font-size:22px;">🔍</button>
-    </div>
-</div>
-
-<script>
-    let scanner;
-    let flash = false;
-
-    window.onload = () => {
-        // Inicializa o scanner SEM o qrbox interno para evitar a segunda lente da biblioteca
-        scanner = new Html5Qrcode("reader");
-        startCamera();
+  return (
+    <div className="flex flex-col h-screen w-full bg-black text-white font-sans overflow-hidden">
+      
+      <div className="relative flex-1 w-full overflow-hidden">
         
-        document.getElementById('handle').onclick = () => document.getElementById('sheet').classList.toggle('open');
-        document.getElementById('openAi').onclick = () => document.getElementById('aiModal').classList.add('active');
-
-        // Lógica do botão de notificação
-        const btnNotify = document.getElementById('btnNotify');
-        const isNotified = localStorage.getItem('enyen_notified') === 'true';
-        
-        if(isNotified) {
-            btnNotify.innerText = "AVISO ATIVADO 🔔";
-            btnNotify.classList.add('active');
-        }
-
-        btnNotify.onclick = () => {
-            localStorage.setItem('enyen_notified', 'true');
-            btnNotify.innerText = "AVISO ATIVADO 🔔";
-            btnNotify.classList.add('active');
+        {/* LOGIN SCREEN */}
+        {activeTab === 'profile' && !user && (
+          <div className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center p-10 text-center">
+            <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center mb-8 border border-white/5">
+              <Chrome size={40} className="text-[#00a884]" />
+            </div>
+            <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4">Enyen Login</h2>
             
-            const toast = document.getElementById('toast');
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        };
+            {errorMsg && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400 text-[10px] text-left w-full">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
 
-        setupPersistentCountdown();
-    };
+            <button 
+              onClick={handleGoogleLogin}
+              className="w-full py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-4 active:scale-95 transition-all"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Entrar com Google
+            </button>
+          </div>
+        )}
 
-    function setupPersistentCountdown() {
-        let launchTime = localStorage.getItem('enyen_launch_v4');
-        if (!launchTime) {
-            const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + 11);
-            targetDate.setHours(23, 58, 0);
-            launchTime = targetDate.getTime();
-            localStorage.setItem('enyen_launch_v4', launchTime);
-        }
+        {/* SCANNER VIEW */}
+        {activeTab === 'enyen' && (
+          <div className="h-full w-full flex flex-col items-center justify-center">
+             <Camera size={48} className="text-[#00a884] mb-4 animate-pulse" />
+             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Lente Enyen Ativa</span>
+          </div>
+        )}
 
-        setInterval(() => {
-            const now = new Date().getTime();
-            const diff = launchTime - now;
-            if (diff <= 0) return;
+        {/* LOGGED PROFILE */}
+        {activeTab === 'profile' && user && (
+          <div className="h-full w-full p-10 flex flex-col items-center justify-center">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#00a884] mb-6">
+              <img src={user.photoURL} className="w-full h-full" alt="perfil" />
+            </div>
+            <h2 className="text-2xl font-black">{user.displayName}</h2>
+            <p className="text-zinc-500 text-sm mb-10">{user.email}</p>
+            <button onClick={() => auth.signOut()} className="flex items-center gap-2 text-red-500 font-bold uppercase text-[10px] tracking-widest">
+              <LogOut size={16} /> Sair da Conta
+            </button>
+          </div>
+        )}
+      </div>
 
-            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
+      {/* NAV BAR */}
+      <div className="h-[90px] bg-black border-t border-white/5 flex items-center justify-around px-10 pb-6">
+        <button onClick={() => setActiveTab('enyen')} className={`flex flex-col items-center gap-1 ${activeTab === 'enyen' ? 'text-[#00a884]' : 'text-zinc-700'}`}>
+          <Camera size={24} />
+          <span className="text-[8px] font-black uppercase">Lente</span>
+        </button>
+        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 ${activeTab === 'profile' ? 'text-white' : 'text-zinc-700'}`}>
+          <User size={24} />
+          <span className="text-[8px] font-black uppercase">Conta</span>
+        </button>
+      </div>
+    </div>
+  );
+};
 
-            document.getElementById('days').innerText = d.toString().padStart(2, '0');
-            document.getElementById('hours').innerText = h.toString().padStart(2, '0');
-            document.getElementById('mins').innerText = m.toString().padStart(2, '0');
-            document.getElementById('secs').innerText = s.toString().padStart(2, '0');
-        }, 1000);
-    }
-
-    function startCamera() {
-        // Ao não passar qrbox, a biblioteca não desenha a moldura própria
-        scanner.start({ facingMode: "environment" }, { 
-            fps: 25
-        }, (code) => {
-            // Sucesso no scan
-        }).catch(() => {});
-    }
-
-    function toggleFlash() {
-        flash = !flash;
-        scanner.applyVideoConstraints({ advanced: [{ torch: flash }] }).catch(() => {});
-    }
-
-    function toggleZoom() {
-        const video = document.querySelector('video');
-        if(video) video.style.transform = video.style.transform === "scale(1.5)" ? "scale(1)" : "scale(1.5)";
-    }
-</script>
-
-</body>
-</html>
+export default App;
 
 ```
