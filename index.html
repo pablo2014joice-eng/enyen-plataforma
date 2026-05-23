@@ -1,48 +1,141 @@
-```html
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OMNI App</title>
 
-    ```react
-import React, { useState, useRef } from 'react';
-import { Home, Users, Plus, MessageSquare, User, Camera, X, Award, FileVideo, Heart, Share2, Bookmark, MessageCircle, Send, Trash2, Smile, Image as ImageIconLucide } from 'lucide-react';
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+const {
+  Home,
+  Users,
+  Plus,
+  MessageSquare,
+  User,
+  X,
+  Heart,
+  Share2,
+  Bookmark,
+  MessageCircle,
+  Send,
+  Trash2
+} = lucide;
+
+const Icon = ({ icon: IconComponent, ...props }) => {
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = "";
+      const iconNode = IconComponent.createElement({
+        width: props.size || 24,
+        height: props.size || 24,
+        class: props.className || ""
+      });
+      ref.current.appendChild(iconNode);
+    }
+  }, [IconComponent, props]);
+
+  return (
+    <span
+      ref={ref}
+      onClick={props.onClick}
+      className={props.wrapperClass}
+    />
+  );
+};
 
 const App = () => {
-  const [activeTab, setActiveTab] = useState('home');
-  const [posts, setPosts] = useState([]);
-  const [mostrarMenu, setMostrarMenu] = useState(false);
-  const [tipoCriacao, setTipoCriacao] = useState(null); 
-  const [comentarioTexto, setComentarioTexto] = useState('');
-  const [postComentarioAtivo, setPostComentarioAtivo] = useState(null);
-  const [perfil, setPerfil] = useState({ nome: "Usuário", bio: "Bem-vindo ao meu perfil!" });
+  const [activeTab, setActiveTab] = React.useState('home');
+  const [posts, setPosts] = React.useState([]);
+  const [mostrarMenu, setMostrarMenu] = React.useState(false);
+  const [tipoCriacao, setTipoCriacao] = React.useState(null);
+  const [comentarioTexto, setComentarioTexto] = React.useState('');
+  const [postComentarioAtivo, setPostComentarioAtivo] = React.useState(null);
+  const [perfil, setPerfil] = React.useState({
+    nome: "Usuário",
+    bio: "Bem-vindo ao meu perfil!"
+  });
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = React.useRef(null);
 
   const handleMedia = (e) => {
     const file = e.target.files[0];
+
     if (file) {
       const url = URL.createObjectURL(file);
-      setPosts([...posts, { 
-        id: Date.now(), 
-        media: url, 
-        mediaType: file.type.startsWith('video') ? 'video' : 'image',
-        tipo: tipoCriacao || 'post',
-        texto: "Nova publicação",
-        likes: 0,
-        comments: [],
-        liked: false,
-        saved: false
-      }]);
+
+      setPosts([
+        ...posts,
+        {
+          id: Date.now(),
+          media: url,
+          mediaType: file.type.startsWith('video') ? 'video' : 'image',
+          tipo: tipoCriacao || 'post',
+          texto: "Nova publicação",
+          likes: 0,
+          comments: [],
+          liked: false,
+          saved: false
+        }
+      ]);
+
       setMostrarMenu(false);
     }
   };
 
   const toggleLike = (id) => {
-    setPosts(posts.map(p => p.id === id ? { ...p, likes: p.liked ? p.likes - 1 : p.likes + 1, liked: !p.liked } : p));
+    setPosts(
+      posts.map(p =>
+        p.id === id
+          ? {
+              ...p,
+              likes: p.liked ? p.likes - 1 : p.likes + 1,
+              liked: !p.liked
+            }
+          : p
+      )
+    );
   };
 
   const deletarComentario = (postId, index) => {
-    setPosts(posts.map(p => p.id === postId ? { ...p, comments: p.comments.filter((_, i) => i !== index) } : p));
+    setPosts(
+      posts.map(p =>
+        p.id === postId
+          ? {
+              ...p,
+              comments: p.comments.filter((_, i) => i !== index)
+            }
+          : p
+      )
+    );
   };
 
   const compartilharPost = () => {
@@ -52,70 +145,241 @@ const App = () => {
 
   return (
     <div className="bg-black min-h-screen text-white flex flex-col font-sans">
+
       <main className="flex-1 w-full h-full overflow-hidden">
+
         {activeTab === 'home' && (
           <div className="w-full h-full overflow-y-scroll snap-y snap-mandatory">
+
             {posts.filter(p => p.tipo === 'post').map(p => (
-                <div key={p.id} className="w-full h-screen snap-start relative bg-black flex flex-col justify-center items-center">
-                    {p.mediaType === 'video' ? <video src={p.media} className="w-full h-full object-cover" autoPlay loop controls /> : <img src={p.media} className="w-full h-full object-contain" />}
-                    <div className="absolute right-4 bottom-20 flex flex-col gap-6 z-20">
-                        <button onClick={() => toggleLike(p.id)} className="flex flex-col items-center"><Heart size={32} className={p.liked ? "text-red-500 fill-red-500" : ""} /><span>{p.likes}</span></button>
-                        <button onClick={() => setPostComentarioAtivo(p.id)}><MessageCircle size={32} /></button>
-                        <button onClick={compartilharPost}><Share2 size={32} /></button>
-                        <button onClick={() => setPosts(posts.map(po => po.id === p.id ? {...po, saved: !po.saved} : po))}><Bookmark size={32} /></button>
-                    </div>
+              <div
+                key={p.id}
+                className="w-full h-screen snap-start relative bg-black flex flex-col justify-center items-center"
+              >
+
+                {p.mediaType === 'video' ? (
+                  <video
+                    src={p.media}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    loop
+                    controls
+                  />
+                ) : (
+                  <img
+                    src={p.media}
+                    className="w-full h-full object-contain"
+                  />
+                )}
+
+                <div className="absolute right-4 bottom-20 flex flex-col gap-6 z-20">
+
+                  <button
+                    onClick={() => toggleLike(p.id)}
+                    className="flex flex-col items-center"
+                  >
+                    <Icon
+                      icon={Heart}
+                      size={32}
+                      className={p.liked ? "text-red-500 fill-red-500" : ""}
+                    />
+                    <span>{p.likes}</span>
+                  </button>
+
+                  <button onClick={() => setPostComentarioAtivo(p.id)}>
+                    <Icon icon={MessageCircle} size={32} />
+                  </button>
+
+                  <button onClick={compartilharPost}>
+                    <Icon icon={Share2} size={32} />
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setPosts(
+                        posts.map(po =>
+                          po.id === p.id
+                            ? { ...po, saved: !po.saved }
+                            : po
+                        )
+                      )
+                    }
+                  >
+                    <Icon icon={Bookmark} size={32} />
+                  </button>
+
                 </div>
+              </div>
             ))}
+
           </div>
         )}
 
         {activeTab === 'perfil' && (
           <div className="p-6 text-center">
-            <div className="w-24 h-24 bg-zinc-800 rounded-full mx-auto mb-4" />
-            <h2 className="text-2xl font-bold">{perfil.nome}</h2>
-            <p className="text-zinc-400">{perfil.bio}</p>
+            <div className="w-24 h-24 bg-zinc-800 rounded-full mx-auto mb-4"></div>
+
+            <h2 className="text-2xl font-bold">
+              {perfil.nome}
+            </h2>
+
+            <p className="text-zinc-400">
+              {perfil.bio}
+            </p>
           </div>
         )}
+
       </main>
 
-      {/* Comentários */}
       {postComentarioAtivo && (
         <div className="fixed bottom-0 w-full h-1/2 bg-zinc-900 p-4 rounded-t-3xl z-50">
-            <div className="flex justify-between mb-4"><h3>Comentários</h3><X onClick={() => setPostComentarioAtivo(null)}/></div>
-            {posts.find(p => p.id === postComentarioAtivo)?.comments.map((c, i) => (
-                <div key={i} className="flex justify-between py-2 border-b border-zinc-800">
-                    <p>{c}</p>
-                    <Trash2 size={16} onClick={() => deletarComentario(postComentarioAtivo, i)} className="text-red-500"/>
-                </div>
+
+          <div className="flex justify-between mb-4">
+            <h3>Comentários</h3>
+
+            <span onClick={() => setPostComentarioAtivo(null)}>
+              <Icon icon={X} />
+            </span>
+          </div>
+
+          {posts
+            .find(p => p.id === postComentarioAtivo)
+            ?.comments.map((c, i) => (
+              <div
+                key={i}
+                className="flex justify-between py-2 border-b border-zinc-800"
+              >
+                <p>{c}</p>
+
+                <span
+                  onClick={() =>
+                    deletarComentario(postComentarioAtivo, i)
+                  }
+                >
+                  <Icon
+                    icon={Trash2}
+                    size={16}
+                    className="text-red-500"
+                  />
+                </span>
+              </div>
             ))}
-            <div className="flex gap-2 mt-4">
-                <input className="flex-1 bg-zinc-800 p-2 rounded" value={comentarioTexto} onChange={(e) => setComentarioTexto(e.target.value)} />
-                <Send onClick={() => { setPosts(posts.map(p => p.id === postComentarioAtivo ? {...p, comments: [...p.comments, comentarioTexto]} : p)); setComentarioTexto(''); }}/>
-            </div>
+
+          <div className="flex gap-2 mt-4">
+
+            <input
+              className="flex-1 bg-zinc-800 p-2 rounded"
+              value={comentarioTexto}
+              onChange={(e) => setComentarioTexto(e.target.value)}
+            />
+
+            <span
+              onClick={() => {
+                setPosts(
+                  posts.map(p =>
+                    p.id === postComentarioAtivo
+                      ? {
+                          ...p,
+                          comments: [...p.comments, comentarioTexto]
+                        }
+                      : p
+                  )
+                );
+
+                setComentarioTexto('');
+              }}
+            >
+              <Icon icon={Send} />
+            </span>
+
+          </div>
         </div>
       )}
 
       <nav className="bg-black border-t border-zinc-800 p-4 flex justify-between">
-        <Home onClick={() => setActiveTab('home')} />
-        <Users onClick={() => setActiveTab('grupos')} />
-        <Plus className="bg-white text-black p-1 rounded" onClick={() => setMostrarMenu(true)} />
-        <MessageSquare onClick={() => setActiveTab('mensagens')} />
-        <User onClick={() => setActiveTab('perfil')} />
+
+        <span onClick={() => setActiveTab('home')}>
+          <Icon icon={Home} />
+        </span>
+
+        <span onClick={() => setActiveTab('grupos')}>
+          <Icon icon={Users} />
+        </span>
+
+        <span
+          onClick={() => setMostrarMenu(true)}
+          className="bg-white text-black p-1 rounded"
+        >
+          <Icon icon={Plus} />
+        </span>
+
+        <span onClick={() => setActiveTab('mensagens')}>
+          <Icon icon={MessageSquare} />
+        </span>
+
+        <span onClick={() => setActiveTab('perfil')}>
+          <Icon icon={User} />
+        </span>
+
       </nav>
 
       {mostrarMenu && (
         <div className="fixed inset-0 bg-black p-6 flex flex-col justify-center z-50">
-            <X onClick={() => setMostrarMenu(false)} className="absolute top-6 right-6" />
-            <button onClick={() => { setTipoCriacao('post'); fileInputRef.current.click(); }} className="p-4 bg-zinc-800 mb-2 rounded">Criar Post</button>
-            <button onClick={() => { setTipoCriacao('grupo'); fileInputRef.current.click(); }} className="p-4 bg-zinc-800 mb-2 rounded">Criar Grupo</button>
-            <button onClick={() => { setTipoCriacao('batalha'); fileInputRef.current.click(); }} className="p-4 bg-zinc-800 rounded">Criar Batalha</button>
-            <input type="file" ref={fileInputRef} className="hidden" onChange={handleMedia} />
+
+          <span
+            onClick={() => setMostrarMenu(false)}
+            className="absolute top-6 right-6"
+          >
+            <Icon icon={X} />
+          </span>
+
+          <button
+            onClick={() => {
+              setTipoCriacao('post');
+              fileInputRef.current.click();
+            }}
+            className="p-4 bg-zinc-800 mb-2 rounded"
+          >
+            Criar Post
+          </button>
+
+          <button
+            onClick={() => {
+              setTipoCriacao('grupo');
+              fileInputRef.current.click();
+            }}
+            className="p-4 bg-zinc-800 mb-2 rounded"
+          >
+            Criar Grupo
+          </button>
+
+          <button
+            onClick={() => {
+              setTipoCriacao('batalha');
+              fileInputRef.current.click();
+            }}
+            className="p-4 bg-zinc-800 rounded"
+          >
+            Criar Batalha
+          </button>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleMedia}
+          />
+
         </div>
       )}
+
     </div>
   );
 };
 
-export default App;
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 
-```
+</script>
+
+</body>
+</html>
