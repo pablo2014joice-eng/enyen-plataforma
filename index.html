@@ -22,7 +22,6 @@
             <button onclick="showTab('rede', this)" class="tab-btn">Rede</button>
             <button onclick="showTab('rank', this)" class="tab-btn">Rank</button>
             <button onclick="showTab('perfil', this)" class="tab-btn">Perfil</button>
-            <button onclick="showTab('criar-batalha', this)" class="tab-btn text-blue-500">+ Batalha</button>
         </nav>
     </header>
 
@@ -30,6 +29,7 @@
         <div id="feed" class="tab-content active space-y-4">
             <h2 class="font-bold">Batalhas Ativas</h2>
             <div id="lista-batalhas"></div>
+            <button onclick="showTab('criar-batalha')" class="w-full bg-blue-600 py-2 rounded-xl text-xs font-bold">+ Criar Batalha</button>
         </div>
 
         <div id="rede" class="tab-content space-y-4">
@@ -69,6 +69,15 @@
         </div>
 
         <div id="detalhe-grupo" class="tab-content space-y-4 max-w-sm mx-auto">
+            <div id="grupo-admin-painel" class="hidden bg-neutral-900 p-4 rounded-xl border border-blue-900 space-y-2">
+                <h3 class="text-blue-500 font-bold text-xs uppercase">Painel do Dono</h3>
+                <input type="text" id="edit-g-nome" class="w-full bg-neutral-800 p-2 rounded">
+                <textarea id="edit-g-bio" class="w-full bg-neutral-800 p-2 rounded"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="atualizarGrupo()" class="bg-blue-600 px-4 py-1 rounded text-xs font-bold">Salvar</button>
+                    <button onclick="excluirGrupo()" class="bg-red-900 text-red-500 px-4 py-1 rounded text-xs font-bold">Excluir Grupo</button>
+                </div>
+            </div>
             <div id="grupo-view-content"></div>
             <div id="grupo-chat" class="h-40 overflow-y-auto bg-neutral-900 p-3 rounded-xl text-sm space-y-2"></div>
             <div class="flex gap-2">
@@ -79,6 +88,7 @@
     </main>
 
     <script>
+        const MEU_ID = "dono_unico"; 
         let db = JSON.parse(localStorage.getItem('omni_db')) || { grupos: [], batalhas: [], perfil: { nome: '', bio: '', img: '' } };
 
         function persistir() { localStorage.setItem('omni_db', JSON.stringify(db)); renderizar(); }
@@ -90,23 +100,20 @@
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab-btn'));
                 btn.classList.add('active-tab-btn');
             }
-            if(id === 'rank') atualizarRank();
         }
 
         function previewImg(input, imgId, textId) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById(imgId).src = e.target.result;
-                    document.getElementById(imgId).classList.remove('hidden');
-                    document.getElementById(textId).classList.add('hidden');
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById(imgId).src = e.target.result;
+                document.getElementById(imgId).classList.remove('hidden');
+                document.getElementById(textId).classList.add('hidden');
+            };
+            reader.readAsDataURL(input.files[0]);
         }
 
         function salvarGrupo() {
-            db.grupos.push({ id: Date.now(), nome: document.getElementById('g-nome').value, bio: document.getElementById('g-bio').value, img: document.getElementById('g-img').src, msg: [] });
+            db.grupos.push({ id: Date.now(), dono: MEU_ID, nome: document.getElementById('g-nome').value, bio: document.getElementById('g-bio').value, img: document.getElementById('g-img').src, msg: [] });
             persistir();
             showTab('rede');
         }
@@ -117,25 +124,29 @@
             showTab('feed');
         }
 
-        function salvarPerfil() {
-            db.perfil.nome = document.getElementById('meu-nome').value;
-            db.perfil.bio = document.getElementById('minha-bio').value;
+        function atualizarGrupo() {
+            window.currentG.nome = document.getElementById('edit-g-nome').value;
+            window.currentG.bio = document.getElementById('edit-g-bio').value;
             persistir();
+            abrirGrupo(window.currentG.id);
         }
 
-        function atualizarPerfilImg(input) {
-            const reader = new FileReader();
-            reader.onload = e => { db.perfil.img = e.target.result; persistir(); document.getElementById('p-img').src = e.target.result; document.getElementById('p-img').classList.remove('hidden'); document.getElementById('p-text').classList.add('hidden'); };
-            reader.readAsDataURL(input.files[0]);
-        }
-
-        function renderizar() {
-            document.getElementById('lista-grupos').innerHTML = db.grupos.map(g => `<div class="bg-neutral-900 p-4 rounded-xl flex items-center gap-4 cursor-pointer" onclick="abrirGrupo(${g.id})"><img src="${g.img}" class="w-10 h-10 rounded-full object-cover">${g.nome}</div>`).join('');
-            document.getElementById('lista-batalhas').innerHTML = db.batalhas.map(b => `<div class="bg-neutral-900 p-4 rounded-xl">${b.titulo}</div>`).join('');
+        function excluirGrupo() {
+            if(confirm("Excluir este grupo permanentemente?")) {
+                db.grupos = db.grupos.filter(g => g.id !== window.currentG.id);
+                persistir();
+                showTab('rede');
+            }
         }
 
         function abrirGrupo(id) {
             window.currentG = db.grupos.find(g => g.id === id);
+            const ehDono = window.currentG.dono === MEU_ID;
+            
+            document.getElementById('grupo-admin-painel').classList.toggle('hidden', !ehDono);
+            document.getElementById('edit-g-nome').value = window.currentG.nome;
+            document.getElementById('edit-g-bio').value = window.currentG.bio;
+            
             document.getElementById('grupo-view-content').innerHTML = `<h2 class="font-bold text-xl">${window.currentG.nome}</h2>`;
             document.getElementById('grupo-chat').innerHTML = window.currentG.msg.map(m => `<div>${m}</div>`).join('');
             showTab('detalhe-grupo');
@@ -149,14 +160,11 @@
             document.getElementById('chat-msg').value = '';
         }
 
-        function atualizarRank() {
-            document.getElementById('lista-rank').innerHTML = `Grupos: ${db.grupos.length} | Batalhas: ${db.batalhas.length}`;
+        function renderizar() {
+            document.getElementById('lista-grupos').innerHTML = db.grupos.map(g => `<div class="bg-neutral-900 p-4 rounded-xl flex items-center gap-4 cursor-pointer" onclick="abrirGrupo(${g.id})"><img src="${g.img}" class="w-10 h-10 rounded-full object-cover">${g.nome}</div>`).join('');
+            document.getElementById('lista-batalhas').innerHTML = db.batalhas.map(b => `<div class="bg-neutral-900 p-4 rounded-xl">${b.titulo}</div>`).join('');
         }
-
-        // Carregar Perfil
-        document.getElementById('meu-nome').value = db.perfil.nome;
-        document.getElementById('minha-bio').value = db.perfil.bio;
-        if(db.perfil.img) { document.getElementById('p-img').src = db.perfil.img; document.getElementById('p-img').classList.remove('hidden'); document.getElementById('p-text').classList.add('hidden'); }
+        
         renderizar();
     </script>
 </body>
