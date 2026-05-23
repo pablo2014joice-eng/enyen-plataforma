@@ -10,140 +10,154 @@
         body { background-color: #050505; color: white; font-family: sans-serif; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .active-tab-btn { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <header class="px-6 py-4 bg-neutral-950 border-b border-neutral-900 z-20">
-        <h1 class="text-2xl font-black text-blue-500 tracking-tight mb-4 cursor-pointer" onclick="showTab('feed')">OMNI</h1>
-        <nav class="flex gap-4 text-xs font-semibold text-neutral-400 overflow-x-auto pb-2 items-center">
-            <button onclick="showTab('feed')">Feed</button>
-            <button onclick="showTab('rede')">Rede</button>
-            <button onclick="showTab('rank')">Rank</button>
-            <button onclick="showTab('perfil')">Perfil</button>
-            <button onclick="showTab('criar-batalha')" class="px-3 py-1 bg-blue-600 rounded-full text-white font-bold">+ Batalha</button>
+    <header class="px-6 py-4 bg-neutral-950 border-b border-neutral-900">
+        <h1 class="text-2xl font-black text-blue-500 mb-4 cursor-pointer" onclick="showTab('feed')">OMNI</h1>
+        <nav class="flex gap-4 text-xs font-bold uppercase text-neutral-400 overflow-x-auto pb-2">
+            <button onclick="showTab('feed', this)" class="tab-btn active-tab-btn">Feed</button>
+            <button onclick="showTab('rede', this)" class="tab-btn">Rede</button>
+            <button onclick="showTab('rank', this)" class="tab-btn">Rank</button>
+            <button onclick="showTab('perfil', this)" class="tab-btn">Perfil</button>
+            <button onclick="showTab('criar-batalha', this)" class="tab-btn text-blue-500">+ Batalha</button>
         </nav>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-6" id="main-content">
-        <div id="feed" class="tab-content active"><div id="lista-batalhas" class="space-y-4"></div></div>
-        
+    <main class="flex-1 overflow-y-auto p-6">
+        <div id="feed" class="tab-content active space-y-4">
+            <h2 class="font-bold">Batalhas Ativas</h2>
+            <div id="lista-batalhas"></div>
+        </div>
+
         <div id="rede" class="tab-content space-y-4">
             <button onclick="showTab('criar-grupo')" class="w-full py-3 bg-neutral-900 border border-neutral-800 rounded-xl font-bold text-blue-500">+ Criar Grupo</button>
             <div id="lista-grupos" class="space-y-4"></div>
         </div>
 
         <div id="rank" class="tab-content space-y-4">
-            <h2 class="font-bold text-lg">Rank Global</h2>
-            <div id="lista-rank" class="space-y-2 text-sm text-neutral-400"></div>
+            <h2 class="font-bold">Rank Global</h2>
+            <div id="lista-rank" class="p-4 bg-neutral-900 rounded-xl"></div>
         </div>
 
-        <div id="detalhe-grupo" class="tab-content space-y-4 max-w-sm mx-auto">
-            <div id="grupo-view-content" class="space-y-4"></div>
-            <div id="grupo-chat" class="bg-neutral-900 p-4 rounded-xl h-48 overflow-y-auto space-y-2 border border-neutral-800"></div>
-            <div class="flex gap-2">
-                <input type="text" id="chat-input" placeholder="Mensagem..." class="flex-1 bg-neutral-800 p-2 rounded">
-                <button onclick="enviarMensagem()" class="bg-blue-600 px-4 py-2 rounded">Enviar</button>
-            </div>
+        <div id="perfil" class="tab-content space-y-4 max-w-sm mx-auto">
+            <label class="w-24 h-24 bg-neutral-800 rounded-full mx-auto flex items-center justify-center cursor-pointer overflow-hidden border border-neutral-700">
+                <img id="p-img" class="hidden w-full h-full object-cover">
+                <span id="p-text">Foto</span>
+                <input type="file" class="hidden" accept="image/*" onchange="atualizarPerfilImg(this)">
+            </label>
+            <input type="text" id="meu-nome" oninput="salvarPerfil()" placeholder="Nome" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
+            <textarea id="minha-bio" oninput="salvarPerfil()" placeholder="Biografia" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
         </div>
 
         <div id="criar-grupo" class="tab-content space-y-4 max-w-sm mx-auto">
+            <label class="w-24 h-24 bg-neutral-900 rounded-full mx-auto flex items-center justify-center cursor-pointer overflow-hidden border border-neutral-800">
+                <img id="g-img" class="hidden w-full h-full object-cover">
+                <span id="g-text">Foto</span>
+                <input type="file" id="g-input" class="hidden" accept="image/*" onchange="previewImg(this, 'g-img', 'g-text')">
+            </label>
             <input type="text" id="g-nome" placeholder="Nome do Grupo" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
             <textarea id="g-bio" placeholder="Biografia" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
-            <button onclick="criarGrupo()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Criar Grupo</button>
+            <button onclick="salvarGrupo()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Criar Grupo</button>
         </div>
 
         <div id="criar-batalha" class="tab-content space-y-4 max-w-sm mx-auto">
             <input type="text" id="tit-bat" placeholder="Título da Batalha" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
-            <button onclick="criarBatalha()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Criar Batalha</button>
+            <button onclick="salvarBatalha()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Criar Batalha</button>
         </div>
-        
-        <div id="perfil" class="tab-content">Perfil...</div>
+
+        <div id="detalhe-grupo" class="tab-content space-y-4 max-w-sm mx-auto">
+            <div id="grupo-view-content"></div>
+            <div id="grupo-chat" class="h-40 overflow-y-auto bg-neutral-900 p-3 rounded-xl text-sm space-y-2"></div>
+            <div class="flex gap-2">
+                <input type="text" id="chat-msg" class="flex-1 bg-neutral-800 p-2 rounded" placeholder="Mensagem...">
+                <button onclick="enviarMsg()" class="bg-blue-600 px-4 rounded">OK</button>
+            </div>
+        </div>
     </main>
 
     <script>
-        let grupos = [];
-        let batalhas = [];
-        let grupoAtualId = null;
+        let db = JSON.parse(localStorage.getItem('omni_db')) || { grupos: [], batalhas: [], perfil: { nome: '', bio: '', img: '' } };
 
-        function showTab(tabId) {
+        function persistir() { localStorage.setItem('omni_db', JSON.stringify(db)); renderizar(); }
+
+        function showTab(id, btn) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            if(tabId === 'rank') atualizarRank();
+            document.getElementById(id).classList.add('active');
+            if(btn) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab-btn'));
+                btn.classList.add('active-tab-btn');
+            }
+            if(id === 'rank') atualizarRank();
         }
 
-        function criarGrupo() {
-            const nome = document.getElementById('g-nome').value;
-            const bio = document.getElementById('g-bio').value;
-            if(nome) {
-                grupos.push({ id: Date.now(), nome, bio, mensagens: [], dono: true });
-                renderizarRede();
-                showTab('rede');
+        function previewImg(input, imgId, textId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById(imgId).src = e.target.result;
+                    document.getElementById(imgId).classList.remove('hidden');
+                    document.getElementById(textId).classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function criarBatalha() {
-            const titulo = document.getElementById('tit-bat').value;
-            if(titulo) {
-                batalhas.push({ titulo });
-                document.getElementById('lista-batalhas').innerHTML += `<div class="bg-neutral-900 p-4 rounded-xl border border-neutral-800">${titulo}</div>`;
-                showTab('feed');
-            }
+        function salvarGrupo() {
+            db.grupos.push({ id: Date.now(), nome: document.getElementById('g-nome').value, bio: document.getElementById('g-bio').value, img: document.getElementById('g-img').src, msg: [] });
+            persistir();
+            showTab('rede');
         }
 
-        function renderizarRede() {
-            const lista = document.getElementById('lista-grupos');
-            lista.innerHTML = grupos.map(g => `
-                <div class="bg-neutral-900 p-4 rounded-xl border border-neutral-800 cursor-pointer" onclick="entrarGrupo(${g.id})">
-                    <h3 class="font-bold text-blue-500">${g.nome}</h3>
-                </div>
-            `).join('');
+        function salvarBatalha() {
+            db.batalhas.push({ titulo: document.getElementById('tit-bat').value });
+            persistir();
+            showTab('feed');
         }
 
-        function atualizarRank() {
-            const lista = document.getElementById('lista-rank');
-            lista.innerHTML = `
-                <p>Grupos: ${grupos.map(g => g.nome).join(', ')}</p>
-                <p>Batalhas: ${batalhas.map(b => b.titulo).join(', ')}</p>
-            `;
+        function salvarPerfil() {
+            db.perfil.nome = document.getElementById('meu-nome').value;
+            db.perfil.bio = document.getElementById('minha-bio').value;
+            persistir();
         }
 
-        function entrarGrupo(id) {
-            grupoAtualId = id;
-            const g = grupos.find(x => x.id === id);
-            document.getElementById('grupo-view-content').innerHTML = `
-                <h2 class="text-2xl font-bold">${g.nome}</h2>
-                <input type="text" id="e-nome" value="${g.nome}" class="w-full bg-neutral-900 p-2 rounded">
-                <textarea id="e-bio" class="w-full bg-neutral-900 p-2 rounded">${g.bio}</textarea>
-                <button onclick="salvarGrupo(${g.id})" class="w-full bg-green-600 py-2 rounded">Salvar</button>
-                <button onclick="excluirGrupo(${g.id})" class="w-full bg-red-900 text-red-500 py-2 rounded">Excluir</button>
-            `;
+        function atualizarPerfilImg(input) {
+            const reader = new FileReader();
+            reader.onload = e => { db.perfil.img = e.target.result; persistir(); document.getElementById('p-img').src = e.target.result; document.getElementById('p-img').classList.remove('hidden'); document.getElementById('p-text').classList.add('hidden'); };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function renderizar() {
+            document.getElementById('lista-grupos').innerHTML = db.grupos.map(g => `<div class="bg-neutral-900 p-4 rounded-xl flex items-center gap-4 cursor-pointer" onclick="abrirGrupo(${g.id})"><img src="${g.img}" class="w-10 h-10 rounded-full object-cover">${g.nome}</div>`).join('');
+            document.getElementById('lista-batalhas').innerHTML = db.batalhas.map(b => `<div class="bg-neutral-900 p-4 rounded-xl">${b.titulo}</div>`).join('');
+        }
+
+        function abrirGrupo(id) {
+            window.currentG = db.grupos.find(g => g.id === id);
+            document.getElementById('grupo-view-content').innerHTML = `<h2 class="font-bold text-xl">${window.currentG.nome}</h2>`;
+            document.getElementById('grupo-chat').innerHTML = window.currentG.msg.map(m => `<div>${m}</div>`).join('');
             showTab('detalhe-grupo');
         }
 
-        function salvarGrupo(id) {
-            const g = grupos.find(x => x.id === id);
-            g.nome = document.getElementById('e-nome').value;
-            g.bio = document.getElementById('e-bio').value;
-            renderizarRede();
-            showTab('rede');
+        function enviarMsg() {
+            const m = document.getElementById('chat-msg').value;
+            window.currentG.msg.push(m);
+            persistir();
+            abrirGrupo(window.currentG.id);
+            document.getElementById('chat-msg').value = '';
         }
 
-        function excluirGrupo(id) {
-            grupos = grupos.filter(x => x.id !== id);
-            renderizarRede();
-            showTab('rede');
+        function atualizarRank() {
+            document.getElementById('lista-rank').innerHTML = `Grupos: ${db.grupos.length} | Batalhas: ${db.batalhas.length}`;
         }
 
-        function enviarMensagem() {
-            const input = document.getElementById('chat-input');
-            const g = grupos.find(x => x.id === grupoAtualId);
-            if(input.value) {
-                g.mensagens.push(input.value);
-                document.getElementById('grupo-chat').innerHTML += `<div class="text-sm">${input.value}</div>`;
-                input.value = '';
-            }
-        }
+        // Carregar Perfil
+        document.getElementById('meu-nome').value = db.perfil.nome;
+        document.getElementById('minha-bio').value = db.perfil.bio;
+        if(db.perfil.img) { document.getElementById('p-img').src = db.perfil.img; document.getElementById('p-img').classList.remove('hidden'); document.getElementById('p-text').classList.add('hidden'); }
+        renderizar();
     </script>
 </body>
 </html>
