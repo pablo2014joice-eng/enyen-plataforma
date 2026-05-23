@@ -1,309 +1,116 @@
-```html
-<!DOCTYPE html>
-<html lang="pt-pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>enyen - Social & Scanner</title>
-    <!-- Bibliotecas -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <style>
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #fdfdfd; 
-            -webkit-tap-highlight-color: transparent; 
-        }
-        
-        .active-tab { color: #00a884 !important; }
-        .active-tab svg { fill: #00a884 !important; }
+```react
+import React, { useState, useRef } from 'react';
+import { Home, Users, Plus, MessageSquare, User, Camera, X, Award, FileVideo, Heart, Share2, Bookmark, MessageCircle, Send, Trash2, Smile, Image as ImageIconLucide } from 'lucide-react';
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(229, 231, 235, 0.5);
-        }
+const App = () => {
+  const [activeTab, setActiveTab] = useState('home');
+  const [posts, setPosts] = useState([]);
+  const [mostrarMenu, setMostrarMenu] = useState(false);
+  const [tipoCriacao, setTipoCriacao] = useState(null); 
+  const [comentarioTexto, setComentarioTexto] = useState('');
+  const [postComentarioAtivo, setPostComentarioAtivo] = useState(null);
+  const [perfil, setPerfil] = useState({ nome: "Usuário", bio: "Bem-vindo ao meu perfil!" });
 
-        .post-card {
-            transition: transform 0.2s;
-        }
-        .post-card:active { transform: scale(0.98); }
+  const fileInputRef = useRef(null);
 
-        /* Scanner */
-        #reader video { object-fit: cover !important; }
-        .scan-window {
-            width: 260px; height: 200px;
-            box-shadow: 0 0 0 1000px rgba(0,0,0,0.6);
-            border-radius: 28px;
-            position: relative;
-        }
-        .corner {
-            position: absolute; width: 35px; height: 35px;
-            border: 5px solid #fff; border-radius: 12px;
-        }
-        .tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; }
-        .tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-bottom-right-radius: 0; border-top-left-radius: 0; }
-        .bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-top-left-radius: 0; border-bottom-right-radius: 0; }
-        .br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-top-right-radius: 0; border-bottom-left-radius: 0; }
+  const handleMedia = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPosts([...posts, { 
+        id: Date.now(), 
+        media: url, 
+        mediaType: file.type.startsWith('video') ? 'video' : 'image',
+        tipo: tipoCriacao || 'post',
+        texto: "Nova publicação",
+        likes: 0,
+        comments: [],
+        liked: false,
+        saved: false
+      }]);
+      setMostrarMenu(false);
+    }
+  };
 
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        .animate-slide-up { animation: slideUp 0.3s ease-out; }
-    </style>
-</head>
-<body class="overflow-hidden text-gray-900">
+  const toggleLike = (id) => {
+    setPosts(posts.map(p => p.id === id ? { ...p, likes: p.liked ? p.likes - 1 : p.likes + 1, liked: !p.liked } : p));
+  };
 
-    <!-- Header -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex justify-between items-center fixed top-0 w-full z-50">
-        <div>
-            <h1 class="text-2xl font-extrabold text-[#00a884] tracking-tighter">enyen</h1>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Moraes de Almeida</p>
+  const deletarComentario = (postId, index) => {
+    setPosts(posts.map(p => p.id === postId ? { ...p, comments: p.comments.filter((_, i) => i !== index) } : p));
+  };
+
+  const compartilharPost = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link copiado!");
+  };
+
+  return (
+    <div className="bg-black min-h-screen text-white flex flex-col font-sans">
+      <main className="flex-1 w-full h-full overflow-hidden">
+        {activeTab === 'home' && (
+          <div className="w-full h-full overflow-y-scroll snap-y snap-mandatory">
+            {posts.filter(p => p.tipo === 'post').map(p => (
+                <div key={p.id} className="w-full h-screen snap-start relative bg-black flex flex-col justify-center items-center">
+                    {p.mediaType === 'video' ? <video src={p.media} className="w-full h-full object-cover" autoPlay loop controls /> : <img src={p.media} className="w-full h-full object-contain" />}
+                    <div className="absolute right-4 bottom-20 flex flex-col gap-6 z-20">
+                        <button onClick={() => toggleLike(p.id)} className="flex flex-col items-center"><Heart size={32} className={p.liked ? "text-red-500 fill-red-500" : ""} /><span>{p.likes}</span></button>
+                        <button onClick={() => setPostComentarioAtivo(p.id)}><MessageCircle size={32} /></button>
+                        <button onClick={compartilharPost}><Share2 size={32} /></button>
+                        <button onClick={() => setPosts(posts.map(po => po.id === p.id ? {...po, saved: !po.saved} : po))}><Bookmark size={32} /></button>
+                    </div>
+                </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'perfil' && (
+          <div className="p-6 text-center">
+            <div className="w-24 h-24 bg-zinc-800 rounded-full mx-auto mb-4" />
+            <h2 className="text-2xl font-bold">{perfil.nome}</h2>
+            <p className="text-zinc-400">{perfil.bio}</p>
+          </div>
+        )}
+      </main>
+
+      {/* Comentários */}
+      {postComentarioAtivo && (
+        <div className="fixed bottom-0 w-full h-1/2 bg-zinc-900 p-4 rounded-t-3xl z-50">
+            <div className="flex justify-between mb-4"><h3>Comentários</h3><X onClick={() => setPostComentarioAtivo(null)}/></div>
+            {posts.find(p => p.id === postComentarioAtivo)?.comments.map((c, i) => (
+                <div key={i} className="flex justify-between py-2 border-b border-zinc-800">
+                    <p>{c}</p>
+                    <Trash2 size={16} onClick={() => deletarComentario(postComentarioAtivo, i)} className="text-red-500"/>
+                </div>
+            ))}
+            <div className="flex gap-2 mt-4">
+                <input className="flex-1 bg-zinc-800 p-2 rounded" value={comentarioTexto} onChange={(e) => setComentarioTexto(e.target.value)} />
+                <Send onClick={() => { setPosts(posts.map(p => p.id === postComentarioAtivo ? {...p, comments: [...p.comments, comentarioTexto]} : p)); setComentarioTexto(''); }}/>
+            </div>
         </div>
-        <button id="authTrigger" class="flex items-center gap-2 p-1 pr-3 rounded-full bg-gray-50 border border-gray-100 transition-all hover:bg-gray-100">
-            <div id="avatarBox" class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
-                <svg id="googleG" class="w-4 h-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                <img id="userImg" class="hidden w-full h-full object-cover">
-            </div>
-            <span id="userLabel" class="text-xs font-extrabold text-gray-700">Entrar</span>
-        </button>
-    </header>
+      )}
 
-    <!-- App Screens -->
-    <main class="h-screen pt-[76px] pb-[85px] overflow-hidden">
-        
-        <!-- FEED SOCIAL -->
-        <section id="screen-feed" class="screen h-full overflow-y-auto bg-[#f8f9fa] p-4 space-y-4">
-            <div class="flex justify-between items-center px-2 pt-2">
-                <h2 class="text-xl font-extrabold">Comunidade</h2>
-                <button onclick="checkAuthAndAction(() => alert('Em breve: Criar Post'))" class="text-[#00a884] font-bold text-sm">+ Novo Post</button>
-            </div>
+      <nav className="bg-black border-t border-zinc-800 p-4 flex justify-between">
+        <Home onClick={() => setActiveTab('home')} />
+        <Users onClick={() => setActiveTab('grupos')} />
+        <Plus className="bg-white text-black p-1 rounded" onClick={() => setMostrarMenu(true)} />
+        <MessageSquare onClick={() => setActiveTab('mensagens')} />
+        <User onClick={() => setActiveTab('perfil')} />
+      </nav>
 
-            <!-- Post Exemplo 1 -->
-            <div class="glass-card p-4 rounded-[2rem] shadow-sm space-y-3 post-card">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">JD</div>
-                    <div>
-                        <p class="text-xs font-extrabold">João do Mercado</p>
-                        <p class="text-[10px] text-gray-400 font-medium">Há 5 min em Moraes de Almeida</p>
-                    </div>
-                </div>
-                <p class="text-sm text-gray-700 leading-relaxed">Povo, o quilo do frango no Mercado Central baixou para <b>R$ 14,90</b>! Aproveitem que o estoque tá acabando.</p>
-                <div class="flex gap-4 pt-2">
-                    <button class="flex items-center gap-1 text-gray-400 text-xs font-bold">❤️ 24</button>
-                    <button class="flex items-center gap-1 text-gray-400 text-xs font-bold">💬 5</button>
-                </div>
-            </div>
+      {mostrarMenu && (
+        <div className="fixed inset-0 bg-black p-6 flex flex-col justify-center z-50">
+            <X onClick={() => setMostrarMenu(false)} className="absolute top-6 right-6" />
+            <button onClick={() => { setTipoCriacao('post'); fileInputRef.current.click(); }} className="p-4 bg-zinc-800 mb-2 rounded">Criar Post</button>
+            <button onClick={() => { setTipoCriacao('grupo'); fileInputRef.current.click(); }} className="p-4 bg-zinc-800 mb-2 rounded">Criar Grupo</button>
+            <button onClick={() => { setTipoCriacao('batalha'); fileInputRef.current.click(); }} className="p-4 bg-zinc-800 rounded">Criar Batalha</button>
+            <input type="file" ref={fileInputRef} className="hidden" onChange={handleMedia} />
+        </div>
+      )}
+    </div>
+  );
+};
 
-            <!-- Post Exemplo 2 -->
-            <div class="glass-card p-4 rounded-[2rem] shadow-sm space-y-3 post-card">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-600">MA</div>
-                    <div>
-                        <p class="text-xs font-extrabold">Maria Promoções</p>
-                        <p class="text-[10px] text-gray-400 font-medium">Há 2 horas</p>
-                    </div>
-                </div>
-                <div class="bg-gray-50 p-3 rounded-2xl border border-dashed border-gray-200">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Produto Detectado</div>
-                    <div class="text-lg font-black text-[#00a884]">Arroz Tipo 1 - 5kg</div>
-                    <div class="text-xl font-extrabold text-gray-800">R$ 28,50</div>
-                </div>
-                <div class="flex gap-4 pt-2">
-                    <button class="flex items-center gap-1 text-gray-400 text-xs font-bold">❤️ 12</button>
-                    <button class="flex items-center gap-1 text-gray-400 text-xs font-bold">💬 2</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- SCANNER -->
-        <section id="screen-scan" class="screen hidden h-full bg-black relative">
-            <div id="reader" class="w-full h-full"></div>
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                <div class="scan-window">
-                    <div class="corner tl"></div><div class="corner tr"></div>
-                    <div class="corner bl"></div><div class="corner br"></div>
-                </div>
-            </div>
-            <div class="absolute bottom-12 w-full flex justify-center gap-10 z-20">
-                <button onclick="toggleFlash()" class="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-2xl border border-white/20">🔦</button>
-                <button onclick="toggleZoom()" class="w-16 h-16 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center text-2xl border border-white/20">🔍</button>
-            </div>
-        </section>
-
-        <!-- PERFIL -->
-        <section id="screen-profile" class="screen hidden h-full bg-white">
-            <div id="profile-logged-out" class="h-full flex flex-col items-center justify-center p-8 text-center space-y-6">
-                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-5xl">🔒</div>
-                <div>
-                    <h2 class="text-2xl font-black">Sua conta social</h2>
-                    <p class="text-gray-500 text-sm mt-2">Conecte-se com o Google para ver seu histórico, ganhar pontos e postar promoções em Moraes de Almeida.</p>
-                </div>
-                <button onclick="handleAuth()" class="w-full bg-[#00a884] text-white font-black py-4 rounded-3xl shadow-lg shadow-[#00a884]/30">CONECTAR GOOGLE</button>
-            </div>
-
-            <div id="profile-logged-in" class="hidden h-full overflow-y-auto">
-                <div class="bg-gradient-to-b from-[#00a884]/10 to-white p-8 text-center border-b border-gray-50">
-                    <div class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-2xl overflow-hidden bg-gray-200">
-                        <img id="pfpLarge" src="" class="w-full h-full object-cover">
-                    </div>
-                    <h2 id="pfpName" class="text-2xl font-extrabold text-gray-800">Usuário</h2>
-                    <p class="text-xs font-bold text-[#00a884] uppercase tracking-widest mt-1">Nível 1 • Contribuidor</p>
-                </div>
-                
-                <div class="p-6 space-y-4">
-                    <div class="flex gap-4">
-                        <div class="flex-1 bg-gray-50 p-4 rounded-3xl text-center">
-                            <span class="block text-2xl font-black">15</span>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase">Scans</span>
-                        </div>
-                        <div class="flex-1 bg-gray-50 p-4 rounded-3xl text-center">
-                            <span class="block text-2xl font-black">350</span>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase">Pontos</span>
-                        </div>
-                    </div>
-                    <button onclick="auth.signOut()" class="w-full py-4 text-red-500 font-bold text-sm bg-red-50 rounded-2xl mt-4">Sair da Conta</button>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Bottom Nav -->
-    <nav class="fixed bottom-0 w-full h-[85px] bg-white border-t border-gray-100 flex justify-around items-center px-6 z-50">
-        <button onclick="changeScreen('feed')" id="nav-feed" class="flex flex-col items-center gap-1 text-gray-400 active-tab">
-            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/></svg>
-            <span class="text-[10px] font-extrabold uppercase">Feed</span>
-        </button>
-        
-        <button onclick="changeScreen('scan')" id="nav-scan" class="relative">
-            <div class="w-14 h-14 bg-[#00a884] rounded-2xl flex items-center justify-center -mt-12 shadow-xl shadow-[#00a884]/40 border-4 border-white">
-                <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M4,4H7V6H4V9H2V4A2,2 0 0,1 4,2H9V4H4M20,4V9H22V4A2,2 0 0,0 20,2H15V4H20M4,20H9V22H4A2,2 0 0,1 2,20V15H4V20M20,20V15H22V20A2,2 0 0,0 20,22H15V20H20M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16Z"/></svg>
-            </div>
-        </button>
-
-        <button onclick="changeScreen('profile')" id="nav-profile" class="flex flex-col items-center gap-1 text-gray-400">
-            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12,19.2C9.5,19.2 7.29,17.92 6,16C6.03,14 10,12.9 12,12.9C14,12.9 17.97,14 18,16C16.71,17.92 14.5,19.2 12,19.2M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
-            <span class="text-[10px] font-extrabold uppercase">Conta</span>
-        </button>
-    </nav>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCcfC3yOgkaG6kJn_KommwOWmXUpn9eAv8",
-            authDomain: "enyen-62a5a.firebaseapp.com",
-            projectId: "enyen-62a5a",
-            storageBucket: "enyen-62a5a.firebasestorage.app",
-            messagingSenderId: "1071896211275",
-            appId: "1:1071896211275:web:06594db6eb2bda4c042ce"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const provider = new firebase.auth.GoogleAuthProvider();
-
-        let scanner = null;
-        let flash = false;
-
-        // Login Handler
-        async function handleAuth() {
-            try {
-                await auth.signInWithPopup(provider);
-            } catch {
-                await auth.signInWithRedirect(provider);
-            }
-        }
-
-        // Check Auth for Actions
-        function checkAuthAndAction(callback) {
-            if (!auth.currentUser) {
-                if(confirm("Você precisa estar logado com o Google para esta ação. Entrar agora?")) {
-                    handleAuth();
-                }
-            } else {
-                callback();
-            }
-        }
-
-        // UI Auth Sync
-        auth.onAuthStateChanged(user => {
-            const btn = document.getElementById('authTrigger');
-            const label = document.getElementById('userLabel');
-            const icon = document.getElementById('googleG');
-            const img = document.getElementById('userImg');
-            
-            if (user) {
-                label.innerText = user.displayName.split(' ')[0];
-                icon.classList.add('hidden');
-                img.src = user.photoURL;
-                img.classList.remove('hidden');
-                
-                document.getElementById('profile-logged-out').classList.add('hidden');
-                document.getElementById('profile-logged-in').classList.remove('hidden');
-                document.getElementById('pfpLarge').src = user.photoURL;
-                document.getElementById('pfpName').innerText = user.displayName;
-            } else {
-                label.innerText = "Entrar";
-                icon.classList.remove('hidden');
-                img.classList.add('hidden');
-                
-                document.getElementById('profile-logged-out').classList.remove('hidden');
-                document.getElementById('profile-logged-in').classList.add('hidden');
-            }
-        });
-
-        document.getElementById('authTrigger').onclick = () => {
-            if(!auth.currentUser) handleAuth();
-            else changeScreen('profile');
-        };
-
-        // Navigation
-        function changeScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab'));
-            
-            document.getElementById('screen-' + id).classList.remove('hidden');
-            document.getElementById('nav-' + id).classList.add('active-tab');
-
-            if(id === 'scan') startScanner();
-            else stopScanner();
-        }
-
-        // Scanner Functions
-        function startScanner() {
-            if(!scanner) {
-                scanner = new Html5Qrcode("reader");
-                scanner.start({ facingMode: "environment" }, { fps: 30 }, (code) => {
-                    checkAuthAndAction(() => {
-                        alert("Produto escaneado: " + code + ". Promoção salva na sua conta!");
-                    });
-                }).catch(err => console.error(err));
-            }
-        }
-
-        function stopScanner() {
-            if(scanner) {
-                scanner.stop().then(() => scanner = null);
-            }
-        }
-
-        function toggleFlash() {
-            if(scanner) {
-                flash = !flash;
-                scanner.applyVideoConstraints({ advanced: [{ torch: flash }] });
-            }
-        }
-
-        function toggleZoom() {
-            const v = document.querySelector('video');
-            if(v) v.style.transform = v.style.transform === 'scale(1.5)' ? 'scale(1)' : 'scale(1.5)';
-        }
-
-    </script>
-</body>
-</html>
+export default App;
 
 ```
