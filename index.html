@@ -2,171 +2,788 @@
 <!DOCTYPE html>
 <html lang="pt-pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMNI - Batalhas</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #050505; color: white; font-family: sans-serif; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .active-tab-btn { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OMNI V6.3 - Sistema de Grupos</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body{
+    background:#050505;
+    color:white;
+    font-family:sans-serif;
+}
+
+.tab-content{
+    display:none;
+}
+
+.tab-content.active{
+    display:block;
+}
+
+.active-tab-btn{
+    color:#3b82f6;
+    border-bottom:2px solid #3b82f6;
+}
+
+.omni-logo{
+    background:linear-gradient(90deg,#3b82f6,#8b5cf6);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.msg{
+    padding:10px;
+    border-radius:14px;
+    max-width:80%;
+    word-wrap:break-word;
+}
+
+.msg.me{
+    background:#2563eb;
+    margin-left:auto;
+}
+
+.msg.other{
+    background:#262626;
+}
+</style>
 </head>
+
 <body class="h-screen flex flex-col">
 
-    <header class="px-6 py-4 bg-neutral-950 border-b border-neutral-900">
-        <h1 class="text-2xl font-black text-blue-500 mb-4 cursor-pointer" onclick="showTab('feed')">OMNI</h1>
-        <nav class="flex gap-4 text-xs font-bold uppercase text-neutral-400 overflow-x-auto pb-2">
-            <button onclick="showTab('feed', this)" class="tab-btn active-tab-btn">Feed</button>
-            <button onclick="showTab('rede', this)" class="tab-btn">Rede</button>
-            <button onclick="showTab('rank', this)" class="tab-btn">Rank</button>
-            <button onclick="showTab('perfil', this)" class="tab-btn">Perfil</button>
-        </nav>
-    </header>
+<header class="px-6 py-4 bg-neutral-950 border-b border-neutral-900">
 
-    <main class="flex-1 overflow-y-auto p-6">
-        <div id="feed" class="tab-content active space-y-4">
-            <h2 class="font-bold">Batalhas Ativas</h2>
-            <div id="lista-batalhas"></div>
-            <button onclick="showTab('criar-batalha')" class="w-full bg-blue-600 py-2 rounded-xl text-xs font-bold">+ Criar Batalha</button>
-        </div>
+<h1 class="text-3xl font-black omni-logo tracking-tighter">
+OMNI
+</h1>
 
-        <div id="rede" class="tab-content space-y-4">
-            <button onclick="showTab('criar-grupo')" class="w-full py-3 bg-neutral-900 border border-neutral-800 rounded-xl font-bold text-blue-500">+ Criar Grupo</button>
-            <div id="lista-grupos" class="space-y-4"></div>
-        </div>
+<nav class="flex gap-4 text-xs font-bold uppercase text-neutral-400 mt-4 pb-2 overflow-x-auto">
 
-        <div id="rank" class="tab-content space-y-4">
-            <h2 class="font-bold">Rank Global</h2>
-            <div id="lista-rank" class="p-4 bg-neutral-900 rounded-xl"></div>
-        </div>
+<button onclick="showTab('feed', this)" class="tab-btn active-tab-btn">
+Feed
+</button>
 
-        <div id="perfil" class="tab-content space-y-4 max-w-sm mx-auto">
-            <label class="w-24 h-24 bg-neutral-800 rounded-full mx-auto flex items-center justify-center cursor-pointer overflow-hidden border border-neutral-700">
-                <img id="p-img" class="hidden w-full h-full object-cover">
-                <span id="p-text">Foto</span>
-                <input type="file" class="hidden" accept="image/*" onchange="atualizarPerfilImg(this)">
-            </label>
-            <input type="text" id="meu-nome" oninput="salvarPerfil()" placeholder="Nome" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
-            <textarea id="minha-bio" oninput="salvarPerfil()" placeholder="Biografia" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
-        </div>
+<button onclick="showTab('rede', this)" class="tab-btn">
+Rede
+</button>
 
-        <div id="criar-grupo" class="tab-content space-y-4 max-w-sm mx-auto">
-            <label class="w-24 h-24 bg-neutral-900 rounded-full mx-auto flex items-center justify-center cursor-pointer overflow-hidden border border-neutral-800">
-                <img id="g-img" class="hidden w-full h-full object-cover">
-                <span id="g-text">Foto</span>
-                <input type="file" id="g-input" class="hidden" accept="image/*" onchange="previewImg(this, 'g-img', 'g-text')">
-            </label>
-            <input type="text" id="g-nome" placeholder="Nome do Grupo" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
-            <textarea id="g-bio" placeholder="Biografia" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
-            <button onclick="salvarGrupo()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Criar Grupo</button>
-        </div>
+<button onclick="showTab('rank', this)" class="tab-btn">
+Rank
+</button>
 
-        <div id="criar-batalha" class="tab-content space-y-4 max-w-sm mx-auto">
-            <input type="text" id="tit-bat" placeholder="Título da Batalha" class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
-            <button onclick="salvarBatalha()" class="w-full bg-blue-600 py-3 rounded-xl font-bold">Criar Batalha</button>
-        </div>
+<button onclick="showTab('perfil', this)" class="tab-btn">
+Perfil
+</button>
 
-        <div id="detalhe-grupo" class="tab-content space-y-4 max-w-sm mx-auto">
-            <div id="grupo-admin-painel" class="hidden bg-neutral-900 p-4 rounded-xl border border-blue-900 space-y-2">
-                <h3 class="text-blue-500 font-bold text-xs uppercase">Painel do Dono</h3>
-                <input type="text" id="edit-g-nome" class="w-full bg-neutral-800 p-2 rounded">
-                <textarea id="edit-g-bio" class="w-full bg-neutral-800 p-2 rounded"></textarea>
-                <div class="flex gap-2">
-                    <button onclick="atualizarGrupo()" class="bg-blue-600 px-4 py-1 rounded text-xs font-bold">Salvar</button>
-                    <button onclick="excluirGrupo()" class="bg-red-900 text-red-500 px-4 py-1 rounded text-xs font-bold">Excluir Grupo</button>
+</nav>
+
+</header>
+
+<main class="flex-1 overflow-y-auto p-6">
+
+<!-- FEED -->
+<div id="feed" class="tab-content active">
+<h2 class="font-bold text-xl">
+Bem-vindo ao OMNI
+</h2>
+</div>
+
+<!-- REDE -->
+<div id="rede" class="tab-content space-y-4">
+
+<button
+onclick="showTab('criar-grupo-tela')"
+class="w-full py-3 bg-blue-600 rounded-xl font-bold text-white text-xs uppercase">
++ Criar Novo Grupo
+</button>
+
+<div id="lista-grupos" class="space-y-4"></div>
+
+</div>
+
+<!-- RANK -->
+<div id="rank" class="tab-content space-y-4">
+
+<div id="lista-rank"
+class="bg-neutral-900 rounded-xl p-4">
+</div>
+
+</div>
+
+<!-- PERFIL -->
+<div id="perfil" class="tab-content space-y-4 max-w-sm mx-auto">
+
+<label class="w-24 h-24 bg-neutral-800 rounded-full mx-auto flex items-center justify-center cursor-pointer overflow-hidden border border-neutral-700">
+
+<img id="p-img" class="hidden w-full h-full object-cover">
+
+<span id="p-text">
+Foto
+</span>
+
+<input
+type="file"
+class="hidden"
+accept="image/*"
+onchange="previewImg(this,'p-img','p-text','perfil')">
+
+</label>
+
+<input
+type="text"
+id="meu-nome"
+placeholder="Seu Nome"
+oninput="salvarPerfil()"
+class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
+
+<textarea
+id="minha-bio"
+placeholder="Sua Biografia"
+oninput="salvarPerfil()"
+class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
+
+</div>
+
+<!-- CRIAR GRUPO -->
+<div id="criar-grupo-tela"
+class="tab-content space-y-4 max-w-sm mx-auto">
+
+<label class="w-24 h-24 bg-neutral-900 rounded-full mx-auto flex items-center justify-center cursor-pointer border border-neutral-800 overflow-hidden">
+
+<img id="g-img"
+class="hidden w-full h-full object-cover">
+
+<span id="g-text">
+Foto
+</span>
+
+<input
+type="file"
+class="hidden"
+accept="image/*"
+onchange="previewImg(this,'g-img','g-text','grupo')">
+
+</label>
+
+<input
+type="text"
+id="g-nome"
+placeholder="Nome do Grupo"
+class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
+
+<textarea
+id="g-bio"
+placeholder="Biografia"
+class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
+
+<button
+onclick="criarGrupo()"
+class="w-full bg-blue-600 py-3 rounded-xl font-bold text-white">
+
+Criar Grupo
+
+</button>
+
+</div>
+
+<!-- DETALHE -->
+<div id="detalhe-grupo" class="tab-content"></div>
+
+</main>
+
+<script>
+
+const MEU_ID = "usuario_atual";
+
+let db = JSON.parse(localStorage.getItem("omni_db")) || {
+
+    grupos:[],
+
+    perfil:{
+        nome:"",
+        bio:"",
+        img:""
+    }
+};
+
+let tempGrupoImg = "";
+
+function persistir(){
+
+    localStorage.setItem(
+        "omni_db",
+        JSON.stringify(db)
+    );
+
+    renderizar();
+}
+
+function showTab(id, btn){
+
+    document.querySelectorAll(".tab-content")
+    .forEach(t => t.classList.remove("active"));
+
+    document.getElementById(id)
+    .classList.add("active");
+
+    document.querySelectorAll(".tab-btn")
+    .forEach(b => b.classList.remove("active-tab-btn"));
+
+    if(btn){
+        btn.classList.add("active-tab-btn");
+    }
+
+    renderizar();
+}
+
+function previewImg(input, imgId, textId, type){
+
+    const reader = new FileReader();
+
+    reader.onload = e => {
+
+        document.getElementById(imgId).src =
+        e.target.result;
+
+        document.getElementById(imgId)
+        .classList.remove("hidden");
+
+        document.getElementById(textId)
+        .classList.add("hidden");
+
+        if(type === "perfil"){
+
+            db.perfil.img = e.target.result;
+
+            persistir();
+
+        }else{
+
+            tempGrupoImg = e.target.result;
+        }
+    };
+
+    reader.readAsDataURL(input.files[0]);
+}
+
+function salvarPerfil(){
+
+    db.perfil.nome =
+    document.getElementById("meu-nome").value;
+
+    db.perfil.bio =
+    document.getElementById("minha-bio").value;
+
+    persistir();
+}
+
+function criarGrupo(){
+
+    const nome =
+    document.getElementById("g-nome").value;
+
+    if(!nome) return alert("Digite um nome");
+
+    db.grupos.push({
+
+        id:Date.now(),
+
+        nome:nome,
+
+        bio:document.getElementById("g-bio").value,
+
+        img:tempGrupoImg,
+
+        dono:MEU_ID,
+
+        membros:[MEU_ID],
+
+        mensagens:[],
+
+        solicitacoes:[]
+    });
+
+    document.getElementById("g-nome").value = "";
+    document.getElementById("g-bio").value = "";
+
+    tempGrupoImg = "";
+
+    persistir();
+
+    showTab("rede");
+}
+
+function abrirGrupo(id){
+
+    const grupo =
+    db.grupos.find(g => g.id === id);
+
+    const souDono =
+    grupo.dono === MEU_ID;
+
+    const souMembro =
+    grupo.membros.includes(MEU_ID);
+
+    const jaSolicitou =
+    grupo.solicitacoes.find(s => s.id === MEU_ID);
+
+    document.getElementById("detalhe-grupo").innerHTML = `
+
+    <div class="space-y-4">
+
+        <button
+        onclick="showTab('rede')"
+        class="bg-neutral-800 px-4 py-2 rounded-xl">
+
+        ← Voltar
+
+        </button>
+
+        <div class="bg-neutral-900 p-4 rounded-2xl">
+
+            <div class="flex items-center gap-4">
+
+                <img
+                src="${grupo.img || 'https://via.placeholder.com/150'}"
+                class="w-20 h-20 rounded-full object-cover">
+
+                <div>
+
+                    <h2 class="text-2xl font-black">
+                        ${grupo.nome}
+                    </h2>
+
+                    <p class="text-neutral-400">
+                        ${grupo.bio}
+                    </p>
+
+                    <div class="text-sm text-neutral-500 mt-1">
+                        ${grupo.membros.length} membros
+                    </div>
+
                 </div>
+
             </div>
-            <div id="grupo-view-content"></div>
-            <div id="grupo-chat" class="h-40 overflow-y-auto bg-neutral-900 p-3 rounded-xl text-sm space-y-2"></div>
-            <div class="flex gap-2">
-                <input type="text" id="chat-msg" class="flex-1 bg-neutral-800 p-2 rounded" placeholder="Mensagem...">
-                <button onclick="enviarMsg()" class="bg-blue-600 px-4 rounded">OK</button>
-            </div>
+
         </div>
-    </main>
 
-    <script>
-        const MEU_ID = "dono_unico"; 
-        let db = JSON.parse(localStorage.getItem('omni_db')) || { grupos: [], batalhas: [], perfil: { nome: '', bio: '', img: '' } };
+        ${
+            !souMembro && !jaSolicitou
+            ?
+            `
+            <button
+            onclick="solicitarEntrada(${grupo.id})"
+            class="w-full bg-blue-600 py-3 rounded-xl font-bold">
 
-        function persistir() { localStorage.setItem('omni_db', JSON.stringify(db)); renderizar(); }
+            Solicitar Entrada
 
-        function showTab(id, btn) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(btn) {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab-btn'));
-                btn.classList.add('active-tab-btn');
-            }
+            </button>
+            `
+            :
+            ""
         }
 
-        function previewImg(input, imgId, textId) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                document.getElementById(imgId).src = e.target.result;
-                document.getElementById(imgId).classList.remove('hidden');
-                document.getElementById(textId).classList.add('hidden');
-            };
-            reader.readAsDataURL(input.files[0]);
+        ${
+            jaSolicitou
+            ?
+            `
+            <div class="bg-yellow-500/20 border border-yellow-500 text-yellow-400 p-3 rounded-xl">
+
+            Solicitação enviada
+
+            </div>
+            `
+            :
+            ""
         }
 
-        function salvarGrupo() {
-            db.grupos.push({ id: Date.now(), dono: MEU_ID, nome: document.getElementById('g-nome').value, bio: document.getElementById('g-bio').value, img: document.getElementById('g-img').src, msg: [] });
-            persistir();
-            showTab('rede');
+        ${
+            souDono
+            ?
+            `
+            <div class="bg-neutral-900 p-4 rounded-2xl space-y-3">
+
+                <div class="flex items-center justify-between">
+
+                    <h3 class="font-bold">
+                        Painel do Grupo
+                    </h3>
+
+                    <div class="bg-red-600 text-white text-xs px-3 py-1 rounded-full">
+
+                    ${grupo.solicitacoes.length} pendente(s)
+
+                    </div>
+
+                </div>
+
+                <label class="w-24 h-24 bg-neutral-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer">
+
+                    <img
+                    id="grupo-edit-img"
+                    src="${grupo.img || ''}"
+                    class="w-full h-full object-cover ${grupo.img ? '' : 'hidden'}">
+
+                    <span id="grupo-edit-text"
+                    class="${grupo.img ? 'hidden' : ''}">
+
+                    Foto
+
+                    </span>
+
+                    <input
+                    type="file"
+                    class="hidden"
+                    accept="image/*"
+                    onchange="trocarFotoGrupo(event, ${grupo.id})">
+
+                </label>
+
+                <input
+                id="edit-nome"
+                value="${grupo.nome}"
+                class="w-full bg-neutral-800 p-3 rounded-xl">
+
+                <textarea
+                id="edit-bio"
+                class="w-full bg-neutral-800 p-3 rounded-xl">${grupo.bio}</textarea>
+
+                <button
+                onclick="salvarGrupo(${grupo.id})"
+                class="w-full bg-blue-600 py-3 rounded-xl font-bold">
+
+                Salvar Alterações
+
+                </button>
+
+                <button
+                onclick="excluirGrupo(${grupo.id})"
+                class="w-full bg-red-600 py-3 rounded-xl font-bold">
+
+                Excluir Grupo
+
+                </button>
+
+            </div>
+
+            <div class="bg-neutral-900 p-4 rounded-2xl space-y-3">
+
+                <h3 class="font-bold">
+                    Solicitações Pendentes
+                </h3>
+
+                ${
+                    grupo.solicitacoes.length === 0
+                    ?
+                    `<div class="text-neutral-500">Nenhuma solicitação</div>`
+                    :
+                    grupo.solicitacoes.map(s => `
+
+                    <div class="bg-neutral-800 p-3 rounded-xl flex items-center justify-between">
+
+                        <div>${s.nome}</div>
+
+                        <div class="flex gap-2">
+
+                            <button
+                            onclick="aceitarSolicitacao(${grupo.id}, '${s.id}')"
+                            class="bg-green-600 px-3 py-1 rounded-lg">
+
+                            Aceitar
+
+                            </button>
+
+                            <button
+                            onclick="rejeitarSolicitacao(${grupo.id}, '${s.id}')"
+                            class="bg-red-600 px-3 py-1 rounded-lg">
+
+                            Rejeitar
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    `).join('')
+                }
+
+            </div>
+            `
+            :
+            ""
         }
 
-        function salvarBatalha() {
-            db.batalhas.push({ titulo: document.getElementById('tit-bat').value });
-            persistir();
-            showTab('feed');
+        ${
+            souMembro
+            ?
+            `
+            <div class="bg-neutral-900 rounded-2xl p-4">
+
+                <h3 class="font-bold mb-4">
+                    Chat do Grupo
+                </h3>
+
+                <div class="space-y-3 mb-4 max-h-80 overflow-y-auto">
+
+                    ${
+                        grupo.mensagens.map(m => `
+
+                        <div class="msg ${m.user === MEU_ID ? 'me' : 'other'}">
+
+                            <div class="text-xs opacity-70 mb-1">
+
+                            ${m.nome}
+
+                            </div>
+
+                            ${m.texto}
+
+                        </div>
+
+                        `).join('')
+                    }
+
+                </div>
+
+                <div class="flex gap-2">
+
+                    <input
+                    id="msg-${grupo.id}"
+                    placeholder="Mensagem..."
+                    class="flex-1 bg-neutral-800 p-3 rounded-xl">
+
+                    <button
+                    onclick="enviarMensagem(${grupo.id})"
+                    class="bg-blue-600 px-4 rounded-xl font-bold">
+
+                    Enviar
+
+                    </button>
+
+                </div>
+
+            </div>
+            `
+            :
+            `
+            <div class="bg-neutral-900 p-4 rounded-2xl text-center text-neutral-400">
+
+            Entre no grupo para acessar o chat
+
+            </div>
+            `
         }
 
-        function atualizarGrupo() {
-            window.currentG.nome = document.getElementById('edit-g-nome').value;
-            window.currentG.bio = document.getElementById('edit-g-bio').value;
-            persistir();
-            abrirGrupo(window.currentG.id);
-        }
+    </div>
+    `;
 
-        function excluirGrupo() {
-            if(confirm("Excluir este grupo permanentemente?")) {
-                db.grupos = db.grupos.filter(g => g.id !== window.currentG.id);
-                persistir();
-                showTab('rede');
-            }
-        }
+    showTab("detalhe-grupo");
+}
 
-        function abrirGrupo(id) {
-            window.currentG = db.grupos.find(g => g.id === id);
-            const ehDono = window.currentG.dono === MEU_ID;
-            
-            document.getElementById('grupo-admin-painel').classList.toggle('hidden', !ehDono);
-            document.getElementById('edit-g-nome').value = window.currentG.nome;
-            document.getElementById('edit-g-bio').value = window.currentG.bio;
-            
-            document.getElementById('grupo-view-content').innerHTML = `<h2 class="font-bold text-xl">${window.currentG.nome}</h2>`;
-            document.getElementById('grupo-chat').innerHTML = window.currentG.msg.map(m => `<div>${m}</div>`).join('');
-            showTab('detalhe-grupo');
-        }
+function solicitarEntrada(id){
 
-        function enviarMsg() {
-            const m = document.getElementById('chat-msg').value;
-            window.currentG.msg.push(m);
-            persistir();
-            abrirGrupo(window.currentG.id);
-            document.getElementById('chat-msg').value = '';
-        }
+    const grupo =
+    db.grupos.find(g => g.id === id);
 
-        function renderizar() {
-            document.getElementById('lista-grupos').innerHTML = db.grupos.map(g => `<div class="bg-neutral-900 p-4 rounded-xl flex items-center gap-4 cursor-pointer" onclick="abrirGrupo(${g.id})"><img src="${g.img}" class="w-10 h-10 rounded-full object-cover">${g.nome}</div>`).join('');
-            document.getElementById('lista-batalhas').innerHTML = db.batalhas.map(b => `<div class="bg-neutral-900 p-4 rounded-xl">${b.titulo}</div>`).join('');
-        }
-        
-        renderizar();
-    </script>
+    const jaExiste =
+    grupo.solicitacoes.find(s => s.id === MEU_ID);
+
+    if(jaExiste) return;
+
+    grupo.solicitacoes.push({
+        id:MEU_ID,
+        nome:db.perfil.nome || "Usuário"
+    });
+
+    persistir();
+
+    abrirGrupo(id);
+}
+
+function aceitarSolicitacao(grupoId, userId){
+
+    const grupo =
+    db.grupos.find(g => g.id === grupoId);
+
+    grupo.membros.push(userId);
+
+    grupo.solicitacoes =
+    grupo.solicitacoes.filter(s => s.id !== userId);
+
+    persistir();
+
+    abrirGrupo(grupoId);
+}
+
+function rejeitarSolicitacao(grupoId, userId){
+
+    const grupo =
+    db.grupos.find(g => g.id === grupoId);
+
+    grupo.solicitacoes =
+    grupo.solicitacoes.filter(s => s.id !== userId);
+
+    persistir();
+
+    abrirGrupo(grupoId);
+}
+
+function trocarFotoGrupo(event, id){
+
+    const file =
+    event.target.files[0];
+
+    if(!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = e => {
+
+        const grupo =
+        db.grupos.find(g => g.id === id);
+
+        grupo.img = e.target.result;
+
+        persistir();
+
+        abrirGrupo(id);
+    };
+
+    reader.readAsDataURL(file);
+}
+
+function salvarGrupo(id){
+
+    const grupo =
+    db.grupos.find(g => g.id === id);
+
+    if(grupo.dono !== MEU_ID){
+        return alert("Só o dono pode editar");
+    }
+
+    grupo.nome =
+    document.getElementById("edit-nome").value;
+
+    grupo.bio =
+    document.getElementById("edit-bio").value;
+
+    persistir();
+
+    abrirGrupo(id);
+}
+
+function excluirGrupo(id){
+
+    const grupo =
+    db.grupos.find(g => g.id === id);
+
+    if(grupo.dono !== MEU_ID){
+        return alert("Só o dono pode excluir");
+    }
+
+    if(!confirm("Excluir grupo?")) return;
+
+    db.grupos =
+    db.grupos.filter(g => g.id !== id);
+
+    persistir();
+
+    showTab("rede");
+}
+
+function enviarMensagem(id){
+
+    const input =
+    document.getElementById(`msg-${id}`);
+
+    if(!input.value) return;
+
+    const grupo =
+    db.grupos.find(g => g.id === id);
+
+    grupo.mensagens.push({
+
+        user:MEU_ID,
+
+        nome:db.perfil.nome || "Usuário",
+
+        texto:input.value
+    });
+
+    input.value = "";
+
+    persistir();
+
+    abrirGrupo(id);
+}
+
+function renderizar(){
+
+    document.getElementById("meu-nome").value =
+    db.perfil.nome;
+
+    document.getElementById("minha-bio").value =
+    db.perfil.bio;
+
+    if(db.perfil.img){
+
+        document.getElementById("p-img").src =
+        db.perfil.img;
+
+        document.getElementById("p-img")
+        .classList.remove("hidden");
+
+        document.getElementById("p-text")
+        .classList.add("hidden");
+    }
+
+    document.getElementById("lista-grupos").innerHTML =
+
+    db.grupos.map(g => `
+
+    <div
+    onclick="abrirGrupo(${g.id})"
+    class="bg-neutral-900 p-4 rounded-2xl flex items-center gap-4 cursor-pointer">
+
+        <img
+        src="${g.img || 'https://via.placeholder.com/150'}"
+        class="w-14 h-14 rounded-full object-cover">
+
+        <div>
+
+            <div class="font-black text-lg">
+                ${g.nome}
+            </div>
+
+            <div class="text-sm text-neutral-400">
+                ${g.bio}
+            </div>
+
+        </div>
+
+    </div>
+
+    `).join('');
+
+    document.getElementById("lista-rank").innerHTML = `
+
+    <div class="text-sm">
+
+    Total de grupos: ${db.grupos.length}
+
+    </div>
+
+    `;
+}
+
+renderizar();
+
+</script>
+
 </body>
 </html>
 
