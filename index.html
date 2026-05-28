@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juliana IA</title>
+
+<title>Juliana IA Ultra</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -29,14 +30,14 @@ body{
 }
 
 .bola{
-    width:250px;
-    height:250px;
+    width:260px;
+    height:260px;
     border-radius:50%;
     border:none;
     cursor:pointer;
     transition:.25s;
     color:white;
-    font-size:85px;
+    font-size:90px;
     background:linear-gradient(135deg,#7c3aed,#ff0080);
     box-shadow:
     0 0 50px #7c3aed88,
@@ -44,7 +45,7 @@ body{
 }
 
 .bola:hover{
-    transform:scale(1.04);
+    transform:scale(1.05);
 }
 
 .ouvindo{
@@ -64,7 +65,7 @@ body{
 
 @keyframes falar{
     from{transform:scale(1)}
-    to{transform:scale(1.06)}
+    to{transform:scale(1.07)}
 }
 
 input{
@@ -101,8 +102,8 @@ input{
 <input
 id="entrada"
 type="text"
-placeholder="Digite qualquer coisa..."
-class="bg-gray-900 border border-gray-700 rounded-full px-5 py-3 w-72 text-center"
+placeholder="Pergunte qualquer coisa..."
+class="bg-gray-900 border border-gray-700 rounded-full px-5 py-3 w-80 text-center"
 />
 
 <button
@@ -117,6 +118,8 @@ Enviar
 
 <script>
 
+const API_KEY = "COLE_SUA_CHAVE_GEMINI_AQUI";
+
 const bola = document.getElementById("bola");
 const texto = document.getElementById("texto");
 const statusTxt = document.getElementById("status");
@@ -126,7 +129,6 @@ const btnEnviar = document.getElementById("btnEnviar");
 let recognition;
 let ouvindo = false;
 let iniciado = false;
-let nome = "";
 let voz = null;
 
 const synth = window.speechSynthesis;
@@ -235,7 +237,7 @@ function iniciarIA(){
         if(e.error === "not-allowed"){
 
             statusTxt.innerText =
-            "Permita o microfone no navegador";
+            "Permita o microfone";
 
         }else{
 
@@ -244,7 +246,7 @@ function iniciarIA(){
         }
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = async (event) => {
 
         const pergunta =
         event.results[0][0].transcript;
@@ -252,97 +254,68 @@ function iniciarIA(){
         texto.innerText =
         "Você disse: " + pergunta;
 
-        responder(pergunta);
+        await responderIA(pergunta);
     };
 }
 
 iniciarIA();
 
-function responder(pergunta){
+async function responderIA(pergunta){
 
-    const p = pergunta.toLowerCase();
+    statusTxt.innerText = "Pensando...";
 
-    let resposta = "";
+    try{
 
-    if(nome === ""){
+        const respostaAPI = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        {
+            method:"POST",
 
-        nome = pergunta;
+            headers:{
+                "Content-Type":"application/json"
+            },
 
-        resposta =
-        `Prazer ${nome}, agora pode conversar comigo sobre qualquer coisa.`;
+            body:JSON.stringify({
+
+                contents:[
+                    {
+                        parts:[
+                            {
+                                text:
+`Você é Juliana, uma inteligência artificial feminina, inteligente, amigável e natural.
+
+Converse igual uma pessoa real.
+
+Responda em português brasileiro.
+
+Pergunta:
+${pergunta}`
+                            }
+                        ]
+                    }
+                ]
+
+            })
+        });
+
+        const dados = await respostaAPI.json();
+
+        const resposta =
+        dados.candidates[0].content.parts[0].text;
+
+        texto.innerText = resposta;
 
         falar(resposta);
 
-        return;
+    }catch(erro){
+
+        console.log(erro);
+
+        statusTxt.innerText =
+        "Erro na IA";
+
+        falar("Desculpe, aconteceu um erro.");
     }
-
-    if(
-        p.includes("oi") ||
-        p.includes("olá")
-    ){
-
-        resposta =
-        `Oi ${nome}, como você está hoje?`;
-    }
-
-    else if(
-        p.includes("hora")
-    ){
-
-        const agora = new Date();
-
-        resposta =
-        `Agora são ${agora.getHours()} horas e ${agora.getMinutes()} minutos.`;
-    }
-
-    else if(
-        p.includes("clima") ||
-        p.includes("tempo")
-    ){
-
-        resposta =
-        `Hoje o clima parece muito agradável.`;
-    }
-
-    else if(
-        p.includes("quem é você")
-    ){
-
-        resposta =
-        `Eu sou a Juliana, sua inteligência artificial com voz humana.`;
-    }
-
-    else if(
-        p.includes("tchau")
-    ){
-
-        resposta =
-        `Até mais ${nome}.`;
-    }
-
-    else if(
-        p.includes("meu nome")
-    ){
-
-        resposta =
-        `Seu nome é ${nome}.`;
-    }
-
-    else if(
-        p.includes("tudo bem")
-    ){
-
-        resposta =
-        `Estou muito bem ${nome}, obrigada por perguntar.`;
-    }
-
-    else{
-
-        resposta =
-        `Interessante ${nome}, gostei do que você falou.`;
-    }
-
-    falar(resposta);
 }
 
 function ouvir(){
@@ -355,10 +328,7 @@ function ouvir(){
 
         recognition.start();
 
-    }catch(e){
-
-        console.log(e);
-    }
+    }catch(e){}
 }
 
 bola.addEventListener("click", () => {
@@ -368,11 +338,11 @@ bola.addEventListener("click", () => {
         iniciado = true;
 
         falar(
-        "Olá, eu sou a Juliana. Primeiro me diga o seu nome."
+        "Olá, eu sou a Juliana. Agora pode me perguntar qualquer coisa."
         );
 
         texto.innerText =
-        "Agora segure a bola e fale.";
+        "Pergunte qualquer coisa.";
 
         return;
     }
@@ -396,7 +366,7 @@ bola.addEventListener("touchstart", () => {
     }
 });
 
-function enviarTexto(){
+async function enviarTexto(){
 
     const valor = entrada.value.trim();
 
@@ -405,9 +375,9 @@ function enviarTexto(){
     texto.innerText =
     "Você escreveu: " + valor;
 
-    responder(valor);
-
     entrada.value = "";
+
+    await responderIA(valor);
 }
 
 btnEnviar.onclick = enviarTexto;
