@@ -1,790 +1,151 @@
-```html
 <!DOCTYPE html>
-<html lang="pt-pt">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OMNI V6.3 - Sistema de Grupos</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body{
-    background:#050505;
-    color:white;
-    font-family:sans-serif;
-}
-
-.tab-content{
-    display:none;
-}
-
-.tab-content.active{
-    display:block;
-}
-
-.active-tab-btn{
-    color:#3b82f6;
-    border-bottom:2px solid #3b82f6;
-}
-
-.omni-logo{
-    background:linear-gradient(90deg,#3b82f6,#8b5cf6);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-}
-
-.msg{
-    padding:10px;
-    border-radius:14px;
-    max-width:80%;
-    word-wrap:break-word;
-}
-
-.msg.me{
-    background:#2563eb;
-    margin-left:auto;
-}
-
-.msg.other{
-    background:#262626;
-}
-</style>
-</head>
-
-<body class="h-screen flex flex-col">
-
-<header class="px-6 py-4 bg-neutral-950 border-b border-neutral-900">
-
-<h1 class="text-3xl font-black omni-logo tracking-tighter">
-OMNI
-</h1>
-
-<nav class="flex gap-4 text-xs font-bold uppercase text-neutral-400 mt-4 pb-2 overflow-x-auto">
-
-<button onclick="showTab('feed', this)" class="tab-btn active-tab-btn">
-Feed
-</button>
-
-<button onclick="showTab('rede', this)" class="tab-btn">
-Rede
-</button>
-
-<button onclick="showTab('rank', this)" class="tab-btn">
-Rank
-</button>
-
-<button onclick="showTab('perfil', this)" class="tab-btn">
-Perfil
-</button>
-
-</nav>
-
-</header>
-
-<main class="flex-1 overflow-y-auto p-6">
-
-<!-- FEED -->
-<div id="feed" class="tab-content active">
-<h2 class="font-bold text-xl">
-Bem-vindo ao OMNI
-</h2>
-</div>
-
-<!-- REDE -->
-<div id="rede" class="tab-content space-y-4">
-
-<button
-onclick="showTab('criar-grupo-tela')"
-class="w-full py-3 bg-blue-600 rounded-xl font-bold text-white text-xs uppercase">
-+ Criar Novo Grupo
-</button>
-
-<div id="lista-grupos" class="space-y-4"></div>
-
-</div>
-
-<!-- RANK -->
-<div id="rank" class="tab-content space-y-4">
-
-<div id="lista-rank"
-class="bg-neutral-900 rounded-xl p-4">
-</div>
-
-</div>
-
-<!-- PERFIL -->
-<div id="perfil" class="tab-content space-y-4 max-w-sm mx-auto">
-
-<label class="w-24 h-24 bg-neutral-800 rounded-full mx-auto flex items-center justify-center cursor-pointer overflow-hidden border border-neutral-700">
-
-<img id="p-img" class="hidden w-full h-full object-cover">
-
-<span id="p-text">
-Foto
-</span>
-
-<input
-type="file"
-class="hidden"
-accept="image/*"
-onchange="previewImg(this,'p-img','p-text','perfil')">
-
-</label>
-
-<input
-type="text"
-id="meu-nome"
-placeholder="Seu Nome"
-oninput="salvarPerfil()"
-class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
-
-<textarea
-id="minha-bio"
-placeholder="Sua Biografia"
-oninput="salvarPerfil()"
-class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
-
-</div>
-
-<!-- CRIAR GRUPO -->
-<div id="criar-grupo-tela"
-class="tab-content space-y-4 max-w-sm mx-auto">
-
-<label class="w-24 h-24 bg-neutral-900 rounded-full mx-auto flex items-center justify-center cursor-pointer border border-neutral-800 overflow-hidden">
-
-<img id="g-img"
-class="hidden w-full h-full object-cover">
-
-<span id="g-text">
-Foto
-</span>
-
-<input
-type="file"
-class="hidden"
-accept="image/*"
-onchange="previewImg(this,'g-img','g-text','grupo')">
-
-</label>
-
-<input
-type="text"
-id="g-nome"
-placeholder="Nome do Grupo"
-class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800">
-
-<textarea
-id="g-bio"
-placeholder="Biografia"
-class="w-full bg-neutral-900 p-3 rounded-xl border border-neutral-800"></textarea>
-
-<button
-onclick="criarGrupo()"
-class="w-full bg-blue-600 py-3 rounded-xl font-bold text-white">
-
-Criar Grupo
-
-</button>
-
-</div>
-
-<!-- DETALHE -->
-<div id="detalhe-grupo" class="tab-content"></div>
-
-</main>
-
-<script>
-
-const MEU_ID = "usuario_atual";
-
-let db = JSON.parse(localStorage.getItem("omni_db")) || {
-
-    grupos:[],
-
-    perfil:{
-        nome:"",
-        bio:"",
-        img:""
-    }
-};
-
-let tempGrupoImg = "";
-
-function persistir(){
-
-    localStorage.setItem(
-        "omni_db",
-        JSON.stringify(db)
-    );
-
-    renderizar();
-}
-
-function showTab(id, btn){
-
-    document.querySelectorAll(".tab-content")
-    .forEach(t => t.classList.remove("active"));
-
-    document.getElementById(id)
-    .classList.add("active");
-
-    document.querySelectorAll(".tab-btn")
-    .forEach(b => b.classList.remove("active-tab-btn"));
-
-    if(btn){
-        btn.classList.add("active-tab-btn");
-    }
-
-    renderizar();
-}
-
-function previewImg(input, imgId, textId, type){
-
-    const reader = new FileReader();
-
-    reader.onload = e => {
-
-        document.getElementById(imgId).src =
-        e.target.result;
-
-        document.getElementById(imgId)
-        .classList.remove("hidden");
-
-        document.getElementById(textId)
-        .classList.add("hidden");
-
-        if(type === "perfil"){
-
-            db.perfil.img = e.target.result;
-
-            persistir();
-
-        }else{
-
-            tempGrupoImg = e.target.result;
-        }
-    };
-
-    reader.readAsDataURL(input.files[0]);
-}
-
-function salvarPerfil(){
-
-    db.perfil.nome =
-    document.getElementById("meu-nome").value;
-
-    db.perfil.bio =
-    document.getElementById("minha-bio").value;
-
-    persistir();
-}
-
-function criarGrupo(){
-
-    const nome =
-    document.getElementById("g-nome").value;
-
-    if(!nome) return alert("Digite um nome");
-
-    db.grupos.push({
-
-        id:Date.now(),
-
-        nome:nome,
-
-        bio:document.getElementById("g-bio").value,
-
-        img:tempGrupoImg,
-
-        dono:MEU_ID,
-
-        membros:[MEU_ID],
-
-        mensagens:[],
-
-        solicitacoes:[]
-    });
-
-    document.getElementById("g-nome").value = "";
-    document.getElementById("g-bio").value = "";
-
-    tempGrupoImg = "";
-
-    persistir();
-
-    showTab("rede");
-}
-
-function abrirGrupo(id){
-
-    const grupo =
-    db.grupos.find(g => g.id === id);
-
-    const souDono =
-    grupo.dono === MEU_ID;
-
-    const souMembro =
-    grupo.membros.includes(MEU_ID);
-
-    const jaSolicitou =
-    grupo.solicitacoes.find(s => s.id === MEU_ID);
-
-    document.getElementById("detalhe-grupo").innerHTML = `
-
-    <div class="space-y-4">
-
-        <button
-        onclick="showTab('rede')"
-        class="bg-neutral-800 px-4 py-2 rounded-xl">
-
-        ← Voltar
-
-        </button>
-
-        <div class="bg-neutral-900 p-4 rounded-2xl">
-
-            <div class="flex items-center gap-4">
-
-                <img
-                src="${grupo.img || 'https://via.placeholder.com/150'}"
-                class="w-20 h-20 rounded-full object-cover">
-
-                <div>
-
-                    <h2 class="text-2xl font-black">
-                        ${grupo.nome}
-                    </h2>
-
-                    <p class="text-neutral-400">
-                        ${grupo.bio}
-                    </p>
-
-                    <div class="text-sm text-neutral-500 mt-1">
-                        ${grupo.membros.length} membros
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        ${
-            !souMembro && !jaSolicitou
-            ?
-            `
-            <button
-            onclick="solicitarEntrada(${grupo.id})"
-            class="w-full bg-blue-600 py-3 rounded-xl font-bold">
-
-            Solicitar Entrada
-
-            </button>
-            `
-            :
-            ""
-        }
-
-        ${
-            jaSolicitou
-            ?
-            `
-            <div class="bg-yellow-500/20 border border-yellow-500 text-yellow-400 p-3 rounded-xl">
-
-            Solicitação enviada
-
-            </div>
-            `
-            :
-            ""
-        }
-
-        ${
-            souDono
-            ?
-            `
-            <div class="bg-neutral-900 p-4 rounded-2xl space-y-3">
-
-                <div class="flex items-center justify-between">
-
-                    <h3 class="font-bold">
-                        Painel do Grupo
-                    </h3>
-
-                    <div class="bg-red-600 text-white text-xs px-3 py-1 rounded-full">
-
-                    ${grupo.solicitacoes.length} pendente(s)
-
-                    </div>
-
-                </div>
-
-                <label class="w-24 h-24 bg-neutral-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer">
-
-                    <img
-                    id="grupo-edit-img"
-                    src="${grupo.img || ''}"
-                    class="w-full h-full object-cover ${grupo.img ? '' : 'hidden'}">
-
-                    <span id="grupo-edit-text"
-                    class="${grupo.img ? 'hidden' : ''}">
-
-                    Foto
-
-                    </span>
-
-                    <input
-                    type="file"
-                    class="hidden"
-                    accept="image/*"
-                    onchange="trocarFotoGrupo(event, ${grupo.id})">
-
-                </label>
-
-                <input
-                id="edit-nome"
-                value="${grupo.nome}"
-                class="w-full bg-neutral-800 p-3 rounded-xl">
-
-                <textarea
-                id="edit-bio"
-                class="w-full bg-neutral-800 p-3 rounded-xl">${grupo.bio}</textarea>
-
-                <button
-                onclick="salvarGrupo(${grupo.id})"
-                class="w-full bg-blue-600 py-3 rounded-xl font-bold">
-
-                Salvar Alterações
-
-                </button>
-
-                <button
-                onclick="excluirGrupo(${grupo.id})"
-                class="w-full bg-red-600 py-3 rounded-xl font-bold">
-
-                Excluir Grupo
-
-                </button>
-
-            </div>
-
-            <div class="bg-neutral-900 p-4 rounded-2xl space-y-3">
-
-                <h3 class="font-bold">
-                    Solicitações Pendentes
-                </h3>
-
-                ${
-                    grupo.solicitacoes.length === 0
-                    ?
-                    `<div class="text-neutral-500">Nenhuma solicitação</div>`
-                    :
-                    grupo.solicitacoes.map(s => `
-
-                    <div class="bg-neutral-800 p-3 rounded-xl flex items-center justify-between">
-
-                        <div>${s.nome}</div>
-
-                        <div class="flex gap-2">
-
-                            <button
-                            onclick="aceitarSolicitacao(${grupo.id}, '${s.id}')"
-                            class="bg-green-600 px-3 py-1 rounded-lg">
-
-                            Aceitar
-
-                            </button>
-
-                            <button
-                            onclick="rejeitarSolicitacao(${grupo.id}, '${s.id}')"
-                            class="bg-red-600 px-3 py-1 rounded-lg">
-
-                            Rejeitar
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    `).join('')
-                }
-
-            </div>
-            `
-            :
-            ""
-        }
-
-        ${
-            souMembro
-            ?
-            `
-            <div class="bg-neutral-900 rounded-2xl p-4">
-
-                <h3 class="font-bold mb-4">
-                    Chat do Grupo
-                </h3>
-
-                <div class="space-y-3 mb-4 max-h-80 overflow-y-auto">
-
-                    ${
-                        grupo.mensagens.map(m => `
-
-                        <div class="msg ${m.user === MEU_ID ? 'me' : 'other'}">
-
-                            <div class="text-xs opacity-70 mb-1">
-
-                            ${m.nome}
-
-                            </div>
-
-                            ${m.texto}
-
-                        </div>
-
-                        `).join('')
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistente Voz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        fundo: '#0F111A',
+                        roxo: '#7928CA',
+                        rosa: '#FF0080',
+                        azul: '#00F5FF',
+                    },
+                    fontFamily: {
+                        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
                     }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bola-estilo {
+                background: linear-gradient(135deg, #7928CA 0%, #FF0080 100%);
+                box-shadow: 0 0 60px rgba(121, 40, 202, 0.4), 0 0 120px rgba(255, 0, 128, 0.2);
+                transition: all 0.4s ease;
+            }
+            .ouvindo {
+                transform: scale(1.15);
+                background: linear-gradient(135deg, #00F5FF 0%, #7928CA 100%);
+                box-shadow: 0 0 70px rgba(0, 245, 255, 0.6), 0 0 140px rgba(121, 40, 202, 0.4);
+            }
+            .falando {
+                transform: scale(1.05);
+                background: linear-gradient(135deg, #FF0080 0%, #7928CA 100%);
+                box-shadow: 0 0 70px rgba(255, 0, 128, 0.7), 0 0 140px rgba(121, 40, 202, 0.5);
+            }
+        }
+    </style>
+</head>
+<body class="bg-fundo text-white font-jakarta h-screen flex flex-col items-center justify-center">
 
-                </div>
+    <p id="textoInfo" class="absolute top-20 text-lg text-gray-300">
+        Clique na bola para começar
+    </p>
 
-                <div class="flex gap-2">
+    <!-- BOLA SIMPLES, BOTÃO PURO, NADA ATRAPALHANDO -->
+    <button id="botaoBola" class="bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer">
+        <i class="fa fa-microphone"></i>
+    </button>
 
-                    <input
-                    id="msg-${grupo.id}"
-                    placeholder="Mensagem..."
-                    class="flex-1 bg-neutral-800 p-3 rounded-xl">
+    <p id="status" class="absolute bottom-20 text-sm text-gray-400">
+        Aguardando...
+    </p>
 
-                    <button
-                    onclick="enviarMensagem(${grupo.id})"
-                    class="bg-blue-600 px-4 rounded-xl font-bold">
+    <script>
+        const botaoBola = document.getElementById('botaoBola');
+        const textoInfo = document.getElementById('textoInfo');
+        const status = document.getElementById('status');
 
-                    Enviar
+        let nomeSalvo = "";
+        let etapa = 1;
+        let iniciado = false;
 
-                    </button>
+        const sintese = window.speechSynthesis;
+        let reconhecimento;
 
-                </div>
-
-            </div>
-            `
-            :
-            `
-            <div class="bg-neutral-900 p-4 rounded-2xl text-center text-neutral-400">
-
-            Entre no grupo para acessar o chat
-
-            </div>
-            `
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            reconhecimento = new Rec();
+            reconhecimento.lang = 'pt-BR';
+            reconhecimento.interimResults = false;
+            reconhecimento.continuous = true;
         }
 
-    </div>
-    `;
-
-    showTab("detalhe-grupo");
-}
-
-function solicitarEntrada(id){
-
-    const grupo =
-    db.grupos.find(g => g.id === id);
-
-    const jaExiste =
-    grupo.solicitacoes.find(s => s.id === MEU_ID);
-
-    if(jaExiste) return;
-
-    grupo.solicitacoes.push({
-        id:MEU_ID,
-        nome:db.perfil.nome || "Usuário"
-    });
-
-    persistir();
-
-    abrirGrupo(id);
-}
-
-function aceitarSolicitacao(grupoId, userId){
-
-    const grupo =
-    db.grupos.find(g => g.id === grupoId);
-
-    grupo.membros.push(userId);
-
-    grupo.solicitacoes =
-    grupo.solicitacoes.filter(s => s.id !== userId);
-
-    persistir();
-
-    abrirGrupo(grupoId);
-}
-
-function rejeitarSolicitacao(grupoId, userId){
-
-    const grupo =
-    db.grupos.find(g => g.id === grupoId);
-
-    grupo.solicitacoes =
-    grupo.solicitacoes.filter(s => s.id !== userId);
-
-    persistir();
-
-    abrirGrupo(grupoId);
-}
-
-function trocarFotoGrupo(event, id){
-
-    const file =
-    event.target.files[0];
-
-    if(!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = e => {
-
-        const grupo =
-        db.grupos.find(g => g.id === id);
-
-        grupo.img = e.target.result;
-
-        persistir();
-
-        abrirGrupo(id);
-    };
-
-    reader.readAsDataURL(file);
-}
-
-function salvarGrupo(id){
-
-    const grupo =
-    db.grupos.find(g => g.id === id);
-
-    if(grupo.dono !== MEU_ID){
-        return alert("Só o dono pode editar");
-    }
-
-    grupo.nome =
-    document.getElementById("edit-nome").value;
-
-    grupo.bio =
-    document.getElementById("edit-bio").value;
-
-    persistir();
-
-    abrirGrupo(id);
-}
-
-function excluirGrupo(id){
-
-    const grupo =
-    db.grupos.find(g => g.id === id);
-
-    if(grupo.dono !== MEU_ID){
-        return alert("Só o dono pode excluir");
-    }
-
-    if(!confirm("Excluir grupo?")) return;
-
-    db.grupos =
-    db.grupos.filter(g => g.id !== id);
-
-    persistir();
-
-    showTab("rede");
-}
-
-function enviarMensagem(id){
-
-    const input =
-    document.getElementById(`msg-${id}`);
-
-    if(!input.value) return;
-
-    const grupo =
-    db.grupos.find(g => g.id === id);
-
-    grupo.mensagens.push({
-
-        user:MEU_ID,
-
-        nome:db.perfil.nome || "Usuário",
-
-        texto:input.value
-    });
-
-    input.value = "";
-
-    persistir();
-
-    abrirGrupo(id);
-}
-
-function renderizar(){
-
-    document.getElementById("meu-nome").value =
-    db.perfil.nome;
-
-    document.getElementById("minha-bio").value =
-    db.perfil.bio;
-
-    if(db.perfil.img){
-
-        document.getElementById("p-img").src =
-        db.perfil.img;
-
-        document.getElementById("p-img")
-        .classList.remove("hidden");
-
-        document.getElementById("p-text")
-        .classList.add("hidden");
-    }
-
-    document.getElementById("lista-grupos").innerHTML =
-
-    db.grupos.map(g => `
-
-    <div
-    onclick="abrirGrupo(${g.id})"
-    class="bg-neutral-900 p-4 rounded-2xl flex items-center gap-4 cursor-pointer">
-
-        <img
-        src="${g.img || 'https://via.placeholder.com/150'}"
-        class="w-14 h-14 rounded-full object-cover">
-
-        <div>
-
-            <div class="font-black text-lg">
-                ${g.nome}
-            </div>
-
-            <div class="text-sm text-neutral-400">
-                ${g.bio}
-            </div>
-
-        </div>
-
-    </div>
-
-    `).join('');
-
-    document.getElementById("lista-rank").innerHTML = `
-
-    <div class="text-sm">
-
-    Total de grupos: ${db.grupos.length}
-
-    </div>
-
-    `;
-}
-
-renderizar();
-
-</script>
-
+        function falar(frase) {
+            sintese.cancel();
+            const fala = new SpeechSynthesisUtterance(frase);
+            fala.lang = 'pt-BR';
+            fala.rate = 1;
+            fala.pitch = 1.2;
+
+            fala.onstart = () => {
+                botaoBola.className = "bola-estilo falando w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
+                status.textContent = "🔊 Falando...";
+                textoInfo.textContent = frase;
+                if(reconhecimento) reconhecimento.stop();
+            };
+
+            fala.onend = () => {
+                botaoBola.className = "bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
+                if(etapa === 1) {
+                    status.textContent = "🎧 Agora fale seu nome...";
+                } else {
+                    status.textContent = `🎧 Sempre ouvindo, ${nomeSalvo}`;
+                }
+                if(reconhecimento) reconhecimento.start();
+            };
+
+            sintese.speak(fala);
+        }
+
+        if(reconhecimento) {
+            reconhecimento.onresult = (e) => {
+                botaoBola.classList.remove('ouvindo');
+                const falado = e.results[e.results.length - 1][0].transcript.trim();
+                if(!falado) return;
+
+                if(etapa === 1) {
+                    nomeSalvo = falado;
+                    etapa = 2;
+                    falar(`Prazer em te conhecer, ${nomeSalvo}! Agora é só falar que eu respondo, não precisa clicar mais.`);
+                } else {
+                    const respostas = [
+                        `Entendi, ${nomeSalvo}!`,
+                        `Que legal, ${nomeSalvo}!`,
+                        `Claro, ${nomeSalvo}!`,
+                        `Tudo bem, ${nomeSalvo}!`
+                    ];
+                    falar(respostas[Math.floor(Math.random() * respostas.length)]);
+                }
+            };
+
+            reconhecimento.onspeechstart = () => {
+                botaoBola.classList.add('ouvindo');
+                status.textContent = "👂 Ouvindo...";
+                textoInfo.textContent = "...";
+            };
+
+            reconhecimento.onerror = () => botaoBola.classList.remove('ouvindo');
+            reconhecimento.onend = () => { if(iniciado) reconhecimento.start(); };
+        }
+
+        // CLIQUE FUNCIONANDO AGORA DE QUALQUER JEITO
+        botaoBola.onclick = () => {
+            if(!iniciado) {
+                iniciado = true;
+                falar("Olá! Eu estou aqui. Qual é o seu nome?");
+            }
+        };
+
+    </script>
 </body>
 </html>
-
-```
