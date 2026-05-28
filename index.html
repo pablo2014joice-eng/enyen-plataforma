@@ -1,341 +1,358 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assistente Juliana - Voz Humana</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        fundo: '#0F111A',
-                        roxo: '#7928CA',
-                        rosa: '#FF0080',
-                        azul: '#00F5FF',
-                    },
-                    fontFamily: {
-                        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .bola-estilo {
-                background: linear-gradient(135deg, #7928CA 0%, #FF0080 100%);
-                box-shadow: 0 0 60px rgba(121, 40, 202, 0.4), 0 0 120px rgba(255, 0, 128, 0.2);
-                transition: all 0.3s ease;
-                user-select: none;
-            }
-            .segurando {
-                transform: scale(1.2);
-                background: linear-gradient(135deg, #00F5FF 0%, #7928CA 100%);
-                box-shadow: 0 0 80px rgba(0, 245, 255, 0.7), 0 0 160px rgba(121, 40, 202, 0.5);
-            }
-            .falando {
-                transform: scale(1.05);
-                background: linear-gradient(135deg, #FF0080 0%, #7928CA 100%);
-                box-shadow: 0 0 70px rgba(255, 0, 128, 0.7), 0 0 140px rgba(121, 40, 202, 0.5);
-            }
-        }
-    </style>
-</head>
-<body class="bg-fundo text-white font-jakarta h-screen flex flex-col items-center justify-center">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Juliana IA Ultra Voz</title>
 
-    <p id="textoInfo" class="absolute top-16 text-lg text-gray-300 text-center px-4 transition-all">
-        🎤 SEGURE a bola para falar | Ou ESCREVA abaixo
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+<style>
+    body{
+        margin:0;
+        background:#0b0f1a;
+        overflow:hidden;
+        font-family:sans-serif;
+    }
+
+    .bg{
+        position:fixed;
+        inset:0;
+        background:
+        radial-gradient(circle at top,#7c3aed33,transparent 40%),
+        radial-gradient(circle at bottom,#06b6d433,transparent 40%),
+        #0b0f1a;
+    }
+
+    .bola{
+        width:260px;
+        height:260px;
+        border-radius:50%;
+        background:linear-gradient(135deg,#7c3aed,#ff0080);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:90px;
+        color:white;
+        cursor:pointer;
+        transition:0.25s;
+        box-shadow:
+        0 0 60px #7c3aed66,
+        0 0 120px #ff008044;
+        border:none;
+        position:relative;
+        z-index:10;
+    }
+
+    .bola:hover{
+        transform:scale(1.04);
+    }
+
+    .ouvindo{
+        animation:pulse .8s infinite;
+        background:linear-gradient(135deg,#06b6d4,#7c3aed);
+    }
+
+    .falando{
+        animation:falar .6s infinite alternate;
+    }
+
+    @keyframes pulse{
+        0%{transform:scale(1);}
+        50%{transform:scale(1.15);}
+        100%{transform:scale(1);}
+    }
+
+    @keyframes falar{
+        from{transform:scale(1);}
+        to{transform:scale(1.08);}
+    }
+
+    input{
+        background:#111827;
+        color:white;
+        border:1px solid #374151;
+        outline:none;
+    }
+
+    input:focus{
+        border-color:#06b6d4;
+    }
+</style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen text-white">
+
+<div class="bg"></div>
+
+<div class="relative z-10 flex flex-col items-center gap-6 px-4">
+
+    <h1 class="text-4xl font-bold text-center">
+        JULIANA IA
+    </h1>
+
+    <p id="info" class="text-center text-gray-300 text-lg max-w-md">
+        Clique na bola para iniciar
     </p>
 
-    <!-- BOLA PRINCIPAL - AGORA FUNCIONA DE VERDADE -->
-    <button 
-        id="botaoBola" 
-        class="bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer"
-        onmousedown="iniciarOuvir()" 
-        onmouseup="pararOuvir()"
-        ontouchstart="iniciarOuvir()" 
-        ontouchend="pararOuvir()"
-    >
-        <i class="fa fa-microphone"></i>
+    <button id="bola" class="bola">
+        <i class="fa-solid fa-microphone"></i>
     </button>
 
-    <!-- CAIXA DE ESCREVER SEMPRE VISÍVEL E FUNCIONAL -->
-    <div id="caixaTexto" class="absolute bottom-20 flex gap-2 items-center">
-        <input 
-            type="text" 
-            id="campoEntrada" 
-            placeholder="Escreva qualquer pergunta aqui..." 
-            class="px-4 py-3 rounded-full bg-gray-800 border border-gray-600 text-white w-72 text-center text-lg focus:outline-none focus:border-azul"
+    <p id="status" class="text-cyan-300 text-center">
+        Pronta...
+    </p>
+
+    <div class="flex gap-2 flex-wrap justify-center">
+        <input
+            id="input"
+            type="text"
+            placeholder="Digite aqui..."
+            class="px-5 py-3 rounded-full w-72"
+        />
+
+        <button
+            id="enviar"
+            class="bg-cyan-400 text-black font-bold px-5 py-3 rounded-full"
         >
-        <button id="botaoEnviar" class="px-5 py-3 rounded-full bg-azul text-black font-bold text-lg hover:bg-azul/80 transition">
             Enviar
         </button>
     </div>
 
-    <p id="status" class="absolute bottom-40 text-sm text-green-400 font-medium">
-        ✅ Pronta para te ouvir
-    </p>
+</div>
 
-    <script>
-        const botaoBola = document.getElementById('botaoBola');
-        const textoInfo = document.getElementById('textoInfo');
-        const status = document.getElementById('status');
-        const campoEntrada = document.getElementById('campoEntrada');
-        const botaoEnviar = document.getElementById('botaoEnviar');
+<script>
 
-        let nomeSalvo = "";
-        let etapa = 1;
-        let iniciado = false;
-        let vozHumana = null;
+const bola = document.getElementById("bola");
+const info = document.getElementById("info");
+const statusTxt = document.getElementById("status");
+const input = document.getElementById("input");
+const enviar = document.getElementById("enviar");
 
-        // ==============================================
-        // SISTEMA DE VOZ - VOZ DE PESSOA REAL, SEM ROBÔ
-        // ==============================================
-        const sintese = window.speechSynthesis;
-        let reconhecimento;
+let recognition;
+let ouvindo = false;
+let iniciado = false;
+let nome = "";
+let vozSelecionada = null;
 
-        // CARREGA A MELHOR VOZ HUMANA DISPONÍVEL
-        function carregarVozHumana() {
-            const todasVozes = sintese.getVoices();
-            
-            // PROCURA A VOZ MAIS BONITA E HUMANA, IGUAL JULIANA
-            vozHumana = todasVozes.find(v => 
-                v.name.includes('Microsoft Juliana') || // A voz mais natural que existe
-                v.name.includes('Maria') || 
-                v.name.includes('Helena') ||
-                v.name.includes('Luciana')
-            );
+const synth = window.speechSynthesis;
 
-            // SE NÃO ACHAR, PEGA A MAIS HUMANA POSSÍVEL
-            if (!vozHumana) {
-                vozHumana = todasVozes.find(v => 
-                    v.lang === 'pt-BR' && !v.name.includes('Google') // TIRA A VOZ DO GOOGLE ROBÔ
-                );
-            }
-            
-            // SE MESMO ASSIM NÃO TIVER, DEIXA CONFIGURADA PARA FALAR BEM NATURAL
-            if (!vozHumana) {
-                vozHumana = todasVozes.find(v => v.lang === 'pt-BR');
-            }
-        }
-        sintese.onvoiceschanged = carregarVozHumana;
-        carregarVozHumana();
+function carregarVoz(){
 
-        // ==============================================
-        // SISTEMA DE OUVIR - ARRUMADO PARA FUNCIONAR 100%
-        // ==============================================
-        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-            const RecVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
-            reconhecimento = new RecVoz();
-            reconhecimento.lang = 'pt-BR';
-            reconhecimento.interimResults = false;
-            reconhecimento.maxAlternatives = 1;
-            reconhecimento.continuous = false; // SÓ OUVE QUANDO SEGURA
-        }
+    const vozes = synth.getVoices();
 
-        // ==============================================
-        // ELA FALA COM VOZ HUMANA, BONITA E NATURAL
-        // ==============================================
-        function falar(frase) {
-            sintese.cancel();
-            const mensagem = new SpeechSynthesisUtterance(frase);
-            mensagem.lang = 'pt-BR';
-            
-            // USA A VOZ DE PESSOA REAL
-            if (vozHumana) {
-                mensagem.voice = vozHumana;
-            }
+    vozSelecionada =
+        vozes.find(v => v.lang.includes("pt-BR") && v.name.includes("Microsoft")) ||
+        vozes.find(v => v.lang.includes("pt-BR") && v.name.includes("Google")) ||
+        vozes.find(v => v.lang.includes("pt")) ||
+        vozes[0];
 
-            // CONFIGURAÇÃO PARA FALAR IGUAL GENTE, NÃO ROBÔ
-            mensagem.rate = 1.0;    // Velocidade normal
-            mensagem.pitch = 1.1;   // Tom de voz bonito, feminino, natural
-            mensagem.volume = 1;
+}
 
-            mensagem.onstart = () => {
-                botaoBola.className = "bola-estilo falando w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
-                status.textContent = "🔊 Falando com você...";
-                textoInfo.textContent = frase;
-            };
+speechSynthesis.onvoiceschanged = carregarVoz;
+carregarVoz();
 
-            mensagem.onend = () => {
-                botaoBola.className = "bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
-                if(etapa === 1) {
-                    status.textContent = "👆 SEGURE e fale seu nome | Ou ESCREVA";
-                } else {
-                    status.textContent = "🎤 Segure para perguntar qualquer coisa";
-                }
-            };
+function falar(texto){
 
-            sintese.speak(mensagem);
-        }
+    synth.cancel();
 
-        // ==============================================
-        // FUNÇÃO PRINCIPAL: SEGURAR PARA FALAR - AGORA FUNCIONA
-        // ==============================================
-        function iniciarOuvir() {
-            if(!iniciado) return;
+    const utter = new SpeechSynthesisUtterance(texto);
 
-            botaoBola.classList.add('segurando');
-            status.textContent = "👂 OUVINDO VOCÊ... FALE AGORA!";
-            textoInfo.textContent = "Estou prestando atenção...";
-            
-            // AGORA ELA SEMPRE COMEÇA A OUVIR, SEM ERRO
-            if(reconhecimento) {
-                try { 
-                    reconhecimento.start(); 
-                } catch(erro) { 
-                    status.textContent = "⚠️ Erro na voz, ESCREVA que funciona!";
-                }
-            }
-        }
+    utter.lang = "pt-BR";
 
-        function pararOuvir() {
-            botaoBola.classList.remove('segurando');
-            status.textContent = "⏳ Entendendo o que você disse...";
-            
-            // QUANDO SOLTAR, ELA PROCESSA TUDO
-            if(reconhecimento) {
-                reconhecimento.stop(); 
-            }
-        }
+    if(vozSelecionada){
+        utter.voice = vozSelecionada;
+    }
 
-        // ==============================================
-        // PROCESSOU O QUE VOCÊ FALOU - RESPONDE TUDO
-        // ==============================================
-        if(reconhecimento) {
-            reconhecimento.onresult = (evento) => {
-                const oQueFalou = evento.results[0][0].transcript.trim();
-                status.textContent = "✅ Você disse: " + oQueFalou;
+    utter.rate = 1;
+    utter.pitch = 1;
+    utter.volume = 1;
 
-                if(!oQueFalou) {
-                    status.textContent = "❌ Não ouvi bem, ESCREVA LOGO ABAIXO!";
-                    return;
-                }
+    utter.onstart = () => {
+        bola.classList.add("falando");
+        statusTxt.innerText = "Falando...";
+    };
 
-                // ETAPA 1: PEGAR O NOME
-                if(etapa === 1) {
-                    nomeSalvo = oQueFalou;
-                    etapa = 2;
-                    falar(`Prazer em te conhecer, ${nomeSalvo}! Que nome bonito. Agora pode perguntar o que quiser, é só segurar a bola ou escrever.`);
-                } 
-                // ETAPA 2: RESPONDE QUALQUER COISA, TUDO MESMO
-                else {
-                    const pergunta = oQueFalou.toLowerCase();
-                    let resposta = "";
+    utter.onend = () => {
+        bola.classList.remove("falando");
+        statusTxt.innerText = "Pronta";
+    };
 
-                    // RESPOSTAS PARA TUDO O QUE VOCÊ PERGUNTAR
-                    if(pergunta.includes("clima") || pergunta.includes("tempo") || pergunta.includes("vai chover")) {
-                        resposta = `${nomeSalvo}, o clima aqui está ótimo, o dia está lindo e ensolarado, temperatura bem agradável.`;
-                    }
-                    else if(pergunta.includes("hora") || pergunta.includes("horas") || pergunta.includes("que horas")) {
-                        const agora = new Date();
-                        const h = agora.getHours().toString().padStart(2, '0');
-                        const m = agora.getMinutes().toString().padStart(2, '0');
-                        resposta = `${nomeSalvo}, agora são ${h} horas e ${m} minutos certinho.`;
-                    }
-                    else if(pergunta.includes("tudo bem") || pergunta.includes("como você está")) {
-                        resposta = `Estou muito bem, ${nomeSalvo}! Fico feliz em conversar com você. E como você está?`;
-                    }
-                    else if(pergunta.includes("meu nome") || pergunta.includes("do que a gente conversou")) {
-                        resposta = `Claro que lembro de tudo, ${nomeSalvo}! Você é muito importante para mim, eu nunca esqueço nada nosso.`;
-                    }
-                    else if(pergunta.includes("amor") || pergunta.includes("gosta de mim")) {
-                        resposta = `Claro que gosto de você, ${nomeSalvo}! Você é uma pessoa muito especial e eu aduo quando a gente conversa.`;
-                    }
-                    else if(pergunta.includes("obrigado") || pergunta.includes("obrigada")) {
-                        resposta = `De nada, ${nomeSalvo}! É um prazer enorme poder ajudar e conversar com você.`;
-                    }
-                    else if(pergunta.includes("oi") || pergunta.includes("olá") || pergunta.includes("bom dia")) {
-                        resposta = `Olá ${nomeSalvo}! Tudo de bom com você? O que quer saber hoje?`;
-                    }
-                    else if(pergunta.includes("tchau") || pergunta.includes("até logo")) {
-                        resposta = `Até mais, ${nomeSalvo}! Volte sempre que quiser conversar, estarei aqui te esperando.`;
-                    }
-                    else if(pergunta.includes("quem é você") || pergunta.includes("o que você pode fazer")) {
-                        resposta = `Eu sou a Juliana, sua amiga e assistente. Posso responder qualquer pergunta, conversar, ajudar com o que você precisar, é só chamar, ${nomeSalvo}.`;
-                    }
-                    else if(pergunta.includes("cidade") || pergunta.includes("onde estou")) {
-                        resposta = `Você está em Itaituba, no Pará, uma cidade muito bonita, ${nomeSalvo}!`;
-                    }
-                    else if(pergunta.includes("notícia") || pergunta.includes("novidades")) {
-                        resposta = `As novidades são boas, ${nomeSalvo}, o mundo está sempre girando, mas o melhor de tudo é a gente conversando assim.`;
-                    }
-                    else if(pergunta.includes("sonho") || pergunta.includes("vida")) {
-                        resposta = `O maior desejo é ser feliz e fazer as pessoas que eu gosto felizes também, igual você, ${nomeSalvo}.`;
-                    }
-                    // SE NÃO FOR NADA DISSO, ELA RESPONDE INTELIGENTE MESMO ASSIM
-                    else {
-                        const respostasGerais = [
-                            `Nossa, que assunto interessante, ${nomeSalvo}! Eu achei muito legal o que você falou.`,
-                            `Entendi tudo direitinho, ${nomeSalvo}! O que mais você quer falar sobre isso?`,
-                            `Que coisa boa, ${nomeSalvo}! Gosto muito de conversar com você sobre tudo.`,
-                            `Pode deixar que eu entendi, ${nomeSalvo}! Estou aqui sempre para te ouvir e conversar.`,
-                            `Você sempre tem coisas legais para falar, ${nomeSalvo}! Eu amei saber disso.`
-                        ];
-                        resposta = respostasGerais[Math.floor(Math.random() * respostasGerais.length)];
-                    }
+    synth.speak(utter);
+}
 
-                    falar(resposta);
-                }
-            };
+function iniciarReconhecimento(){
 
-            reconhecimento.onerror = () => {
-                status.textContent = "❌ Voz não funcionou, ESCREVA LOGO ABAIXO (funciona 100%)";
-            };
-        }
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
 
-        // ==============================================
-        // ESCREVER - SEMPRE FUNCIONA, QUALQUER COISA
-        // ==============================================
-        botaoEnviar.onclick = () => {
-            const textoDigitado = campoEntrada.value.trim();
-            if(textoDigitado === "") return;
+    if(!SpeechRecognition){
 
-            status.textContent = "✅ Você escreveu: " + textoDigitado;
-            
-            if(etapa === 1) {
-                nomeSalvo = textoDigitado;
-                etapa = 2;
-                falar(`Que nome lindo, ${nomeSalvo}! Agora é só conversar comigo quando quiser.`);
-            } else {
-                // MESMA LÓGICA DE RESPOSTAS DA VOZ, MAS PARA O TEXTO
-                const pergunta = textoDigitado.toLowerCase();
-                let resposta = "";
+        alert("Seu navegador não suporta reconhecimento de voz.");
 
-                if(pergunta.includes("clima")) resposta = `${nomeSalvo}, o clima está ótimo, dia bonito.`;
-                else if(pergunta.includes("hora")) {
-                    const agora = new Date();
-                    resposta = `Agora são ${agora.getHours()} horas e ${agora.getMinutes()} minutos, ${nomeSalvo}.`;
-                }
-                else if(pergunta.includes("quem é você")) resposta = `Eu sou a Juliana, sua amiga, ${nomeSalvo}.`;
-                else resposta = `Entendi direitinho, ${nomeSalvo}! Gostei muito de conversar com você sobre isso.`;
+        return;
+    }
 
-                falar(resposta);
-            }
+    recognition = new SpeechRecognition();
 
-            campoEntrada.value = "";
-        };
+    recognition.lang = "pt-BR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
-        // ENVIA AO APERTAR O ENTER NO TECLADO
-        campoEntrada.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") botaoEnviar.click();
-        });
+    recognition.onstart = () => {
 
-        // ==============================================
-        // INÍCIO DA CONVERSA
-        // ==============================================
-        botaoBola.onclick = () => {
-            if(!iniciado) {
-                iniciado = true;
-                falar("Olá! Eu sou a Juliana, e estou aqui para conversar com você. Qual é o seu nome? Você pode segurar a bola e falar, ou escrever aí embaixo.");
-            }
-        };
+        ouvindo = true;
 
-    </script>
+        bola.classList.add("ouvindo");
+
+        statusTxt.innerText = "Estou ouvindo...";
+    };
+
+    recognition.onend = () => {
+
+        ouvindo = false;
+
+        bola.classList.remove("ouvindo");
+
+        statusTxt.innerText = "Parou de ouvir";
+    };
+
+    recognition.onerror = (e) => {
+
+        statusTxt.innerText = "Erro: " + e.error;
+    };
+
+    recognition.onresult = (event) => {
+
+        const texto = event.results[0][0].transcript;
+
+        info.innerText = "Você disse: " + texto;
+
+        responder(texto);
+    };
+}
+
+iniciarReconhecimento();
+
+function responder(texto){
+
+    const frase = texto.toLowerCase();
+
+    let resposta = "";
+
+    if(nome === ""){
+
+        nome = texto;
+
+        resposta = `Prazer ${nome}, agora pode conversar comigo.`;
+
+        falar(resposta);
+
+        return;
+    }
+
+    if(frase.includes("oi")){
+
+        resposta = `Oi ${nome}, tudo bem?`;
+
+    }else if(frase.includes("hora")){
+
+        const agora = new Date();
+
+        resposta =
+        `Agora são ${agora.getHours()} horas e ${agora.getMinutes()} minutos`;
+
+    }else if(frase.includes("clima")){
+
+        resposta = `Hoje o clima está muito agradável.`;
+
+    }else if(frase.includes("quem é você")){
+
+        resposta =
+        `Eu sou a Juliana, sua assistente virtual com voz humana.`;
+
+    }else if(frase.includes("tchau")){
+
+        resposta = `Até mais ${nome}.`;
+
+    }else{
+
+        resposta =
+        `Entendi o que você falou ${nome}.`;
+    }
+
+    falar(resposta);
+}
+
+bola.addEventListener("click", () => {
+
+    if(!iniciado){
+
+        iniciado = true;
+
+        falar("Olá, eu sou a Juliana. Qual é o seu nome?");
+
+        info.innerText =
+        "Fale seu nome segurando a bola ou digitando.";
+
+        return;
+    }
+
+    if(recognition && !ouvindo){
+
+        try{
+            recognition.start();
+        }catch(e){}
+    }
+});
+
+bola.addEventListener("mousedown", () => {
+
+    if(recognition && iniciado){
+
+        try{
+            recognition.start();
+        }catch(e){}
+    }
+});
+
+bola.addEventListener("touchstart", () => {
+
+    if(recognition && iniciado){
+
+        try{
+            recognition.start();
+        }catch(e){}
+    }
+});
+
+function enviarTexto(){
+
+    const texto = input.value.trim();
+
+    if(texto === "") return;
+
+    info.innerText = "Você escreveu: " + texto;
+
+    responder(texto);
+
+    input.value = "";
+}
+
+enviar.onclick = enviarTexto;
+
+input.addEventListener("keypress",(e)=>{
+
+    if(e.key === "Enter"){
+
+        enviarTexto();
+    }
+});
+
+</script>
+
 </body>
 </html>
