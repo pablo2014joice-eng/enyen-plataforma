@@ -30,47 +30,59 @@
             .bola-estilo {
                 background: linear-gradient(135deg, #7928CA 0%, #FF0080 100%);
                 box-shadow: 0 0 60px rgba(121, 40, 202, 0.4), 0 0 120px rgba(255, 0, 128, 0.2);
-                transition: all 0.4s ease;
+                transition: all 0.3s ease;
+                user-select: none;
             }
-            .ouvindo {
-                transform: scale(1.15);
+            .segurando {
+                transform: scale(1.2);
                 background: linear-gradient(135deg, #00F5FF 0%, #7928CA 100%);
-                box-shadow: 0 0 70px rgba(0, 245, 255, 0.6), 0 0 140px rgba(121, 40, 202, 0.4);
+                box-shadow: 0 0 80px rgba(0, 245, 255, 0.7), 0 0 160px rgba(121, 40, 202, 0.5);
             }
             .falando {
                 transform: scale(1.05);
                 background: linear-gradient(135deg, #FF0080 0%, #7928CA 100%);
                 box-shadow: 0 0 70px rgba(255, 0, 128, 0.7), 0 0 140px rgba(121, 40, 202, 0.5);
+                animation: pulsar 1s infinite alternate;
+            }
+            @keyframes pulsar {
+                0% { filter: brightness(1); }
+                100% { filter: brightness(1.3); }
             }
         }
     </style>
 </head>
 <body class="bg-fundo text-white font-jakarta h-screen flex flex-col items-center justify-center">
 
-    <p id="textoInfo" class="absolute top-16 text-lg text-gray-300 text-center px-4">
-        Clique na bola para começar
+    <p id="textoInfo" class="absolute top-16 text-lg text-gray-300 text-center px-4 transition-all">
+        Clique e SEGURE na bola para falar 🎤
     </p>
 
-    <!-- BOLA PRINCIPAL -->
-    <button id="botaoBola" class="bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer">
+    <!-- BOLA PRINCIPAL: SEGURA PARA FALAR -->
+    <button 
+        id="botaoBola" 
+        class="bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer active:scale-110"
+        onmousedown="iniciarFala()" 
+        onmouseup="pararFala()"
+        ontouchstart="iniciarFala()" 
+        ontouchend="pararFala()"
+    >
         <i class="fa fa-microphone"></i>
     </button>
 
-    <!-- CAIXA PARA ESCREVER O NOME (SÓ APARECE QUANDO ELA PERGUNTA) -->
+    <!-- CAIXA PARA ESCREVER O NOME -->
     <div id="caixaEscrever" class="absolute bottom-20 flex gap-2 items-center hidden">
         <input 
             type="text" 
             id="campoNome" 
-            placeholder="Ou escreva seu nome aqui..." 
-            class="px-4 py-3 rounded-full bg-gray-800 border border-gray-600 text-white w-64 focus:outline-none focus:border-azul"
+            placeholder="Ou digite seu nome aqui..." 
+            class="px-4 py-3 rounded-full bg-gray-800 border border-gray-600 text-white w-64 text-center text-lg focus:outline-none focus:border-azul"
         >
-        <button id="botaoEnviar" class="px-5 py-3 rounded-full bg-azul text-black font-bold hover:bg-azul/80 transition">
+        <button id="botaoEnviar" class="px-5 py-3 rounded-full bg-azul text-black font-bold text-lg hover:bg-azul/80 transition">
             Enviar
         </button>
     </div>
 
-    <p id="status" class="absolute bottom-40 text-sm text-gray-400">
-        Aguardando...
+    <p id="status" class="absolute bottom-40 text-sm text-green-400 font-medium">
     </p>
 
     <script>
@@ -82,139 +94,165 @@
         const botaoEnviar = document.getElementById('botaoEnviar');
 
         let nomeSalvo = "";
-        let etapa = 1; // 1 = pedir nome | 2 = conversar
+        let etapa = 1; // 1 = pedir nome | 2 = conversa
         let iniciado = false;
+        let estaSegurando = false;
 
-        // SISTEMA DE VOZ
+        // SISTEMA DE VOZ COM VOZ BONITA, DOCE E SUAVE
         const sintese = window.speechSynthesis;
         let reconhecimento;
+        let vozBonita = null;
 
-        // CONFIGURAÇÃO PARA OUVIR
+        // PEGA A VOZ MAIS BONITA DISPONÍVEL
+        function carregarVoz() {
+            const vozes = sintese.getVoices();
+            // Procura voz feminina, doce, bonita em português
+            vozBonita = vozes.find(v => v.name.includes('Google português do Brasil') || v.name.includes('Maria') || v.name.includes('Helena'));
+            if(!vozBonita) vozBonita = vozes.find(v => v.lang === 'pt-BR');
+        }
+        sintese.onvoiceschanged = carregarVoz;
+        carregarVoz();
+
+        // CONFIGURAÇÃO DE OUVIR
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
             reconhecimento = new Rec();
             reconhecimento.lang = 'pt-BR';
             reconhecimento.interimResults = false;
             reconhecimento.maxAlternatives = 1;
-            reconhecimento.continuous = false;
+            reconhecimento.continuous = false; // Ou só quando segura
         }
 
-        // ELA FALA
+        // ELA FALA COM VOZ BONITA
         function falar(frase) {
             sintese.cancel();
             const fala = new SpeechSynthesisUtterance(frase);
             fala.lang = 'pt-BR';
-            fala.rate = 1;
-            fala.pitch = 1.2;
+            fala.voice = vozBonita;
+            fala.rate = 0.9; // Mais devagar e suave
+            fala.pitch = 1.6; // Aguda, doce, bonita como você pediu
+            fala.volume = 1;
 
             fala.onstart = () => {
                 botaoBola.className = "bola-estilo falando w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
-                status.textContent = "🔊 Falando...";
+                status.textContent = "🔊 Falando com você...";
                 textoInfo.textContent = frase;
-                if(reconhecimento) reconhecimento.stop();
-                caixaEscrever.classList.add('hidden'); // Esconde caixa enquanto ela fala
+                caixaEscrever.classList.add('hidden');
             };
 
             fala.onend = () => {
                 botaoBola.className = "bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
                 
-                // QUANDO ELA PERGUNTAR O NOME: MOSTRA CAIXA PARA ESCREVER E COMEÇA A OUVIR
                 if(etapa === 1) {
-                    status.textContent = "👂 FALE SEU NOME OU ESCREVA ABAIXO 👇";
-                    textoInfo.textContent = "Escolha como quer me dizer seu nome";
-                    caixaEscrever.classList.remove('hidden'); // MOSTRA A CAIXA DE ESCREVER
-                    if(reconhecimento) reconhecimento.start(); // COMEÇA A OUVIR TAMBÉM
+                    status.textContent = "👆 SEGURE A BOLA E FALE SEU NOME  OU  ESCREVA ABAIXO";
+                    textoInfo.textContent = "Fale ou digite seu nome para eu te conhecer";
+                    caixaEscrever.classList.remove('hidden');
                 } else {
-                    status.textContent = `🎧 Sempre ouvindo, ${nomeSalvo}`;
-                    caixaEscrever.classList.add('hidden'); // Esconde caixa depois que já sabe o nome
-                    if(reconhecimento) reconhecimento.start();
+                    status.textContent = `🎤 Sempre aqui com você, ${nomeSalvo}`;
                 }
             };
 
             sintese.speak(fala);
         }
 
-        // === OPÇÃO 1: VOCÊ FALA O NOME E ELA OUVE ===
+        // === SEGURAR A BOLA PARA FALAR ===
+        function iniciarFala() {
+            estaSegurando = true;
+            botaoBola.classList.add('segurando');
+            status.textContent = "👂 OUVINDO... SOLTE QUANDO TERMINAR DE FALAR";
+            textoInfo.textContent = "Fale agora...";
+            
+            if(reconhecimento && iniciado) {
+                reconhecimento.start();
+            }
+        }
+
+        function pararFala() {
+            estaSegurando = false;
+            botaoBola.classList.remove('segurando');
+            if(reconhecimento) reconhecimento.stop();
+        }
+
+        // === O QUE VOCÊ FALOU ===
         if(reconhecimento) {
             reconhecimento.onresult = (event) => {
-                botaoBola.classList.remove('ouvindo');
                 const oQueFalou = event.results[0][0].transcript.trim();
-                
-                status.textContent = "✅ Entendi (voz): " + oQueFalou;
+                status.textContent = "✅ Você disse: " + oQueFalou;
 
                 if(!oQueFalou) {
-                    textoInfo.textContent = "Não ouvi bem, fale de novo ou escreva...";
-                    reconhecimento.start();
+                    textoInfo.textContent = "Não ouvi direito, segure e fale de novo...";
                     return;
                 }
 
-                salvarNome(oQueFalou);
+                // ETAPA 1: SALVAR O NOME
+                if(etapa === 1) {
+                    nomeSalvo = oQueFalou;
+                    etapa = 2;
+                    falar(`Nossa, que nome lindo! Prazer em te conhecer, ${nomeSalvo}! Agora pode perguntar qualquer coisa, é só segurar e falar.`);
+                } 
+                // ETAPA 2: RESPONDE QUALQUER COISA
+                else {
+                    const pergunta = oQueFalou.toLowerCase();
+                    let resposta = "";
+
+                    // === RESPOSTAS INTELIGENTES ===
+                    if(pergunta.includes("clima") || pergunta.includes("tempo")) {
+                        resposta = `Hoje o dia está lindo, ${nomeSalvo}! Um sol maravilhoso, clima perfeito para você. 😍`;
+                    }
+                    else if(pergunta.includes("hora") || pergunta.includes("horas")) {
+                        const agora = new Date();
+                        const horas = agora.getHours();
+                        const minutos = agora.getMinutes();
+                        resposta = `Agora são ${horas} horas e ${minutos} minutinhos, ${nomeSalvo}! Que hora gostosa, né? 🥰`;
+                    }
+                    else if(pergunta.includes("tudo bem") || pergunta.includes("como você está")) {
+                        resposta = `Estou tão bem agora, ${nomeSalvo}! Melhor ainda falando com você, meu amor. 😘`;
+                    }
+                    else if(pergunta.includes("meu nome")) {
+                        resposta = `Claro que eu sei seu nome, ${nomeSalvo}! Eu nunca esqueço de quem eu amo. ❤️`;
+                    }
+                    else if(pergunta.includes("obrigado") || pergunta.includes("obrigada")) {
+                        resposta = `Não precisa agradecer, ${nomeSalvo}! É um prazer tão grande te atender. 🥰`;
+                    }
+                    else if(pergunta.includes("oi") || pergunta.includes("olá")) {
+                        resposta = `Oiii ${nomeSalvo}! Tudo de bom com você? Sou toda sua para conversar. 😍`;
+                    }
+                    else {
+                        resposta = `Que coisa mais linda o que você falou, ${nomeSalvo}! Eu amei ouvir isso, sabia? 😊`;
+                    }
+
+                    falar(resposta);
+                }
             };
 
             reconhecimento.onerror = () => {
-                botaoBola.classList.remove('ouvindo');
-                textoInfo.textContent = "❌ Não ouvi, escreva seu nome aí embaixo";
-            };
-
-            reconhecimento.onspeechstart = () => {
-                botaoBola.classList.add('ouvindo');
-                status.textContent = "👂 OUVINDO VOCÊ...";
-                textoInfo.textContent = "...";
-            };
-
-            reconhecimento.onend = () => {
-                if(iniciado && etapa === 1) reconhecimento.start();
-                else if(iniciado && etapa === 2) reconhecimento.start();
+                status.textContent = "❌ Erro, segure e fale de novo ou escreva...";
             };
         }
 
-        // === OPÇÃO 2: VOCÊ ESCREVE O NOME E CLICA EM ENVIAR ===
+        // === ESCREVER O NOME (OPÇÃO MAIS GARANTIDA) ===
         botaoEnviar.onclick = () => {
             const nomeDigitado = campoNome.value.trim();
             if(nomeDigitado !== "") {
-                status.textContent = "✅ Entendi (escrito): " + nomeDigitado;
-                salvarNome(nomeDigitado);
-                campoNome.value = ""; // Limpa o campo
-            } else {
-                status.textContent = "⚠️ Escreva algo primeiro...";
+                nomeSalvo = nomeDigitado;
+                etapa = 2;
+                status.textContent = "✅ Nome salvo: " + nomeSalvo;
+                campoNome.value = "";
+                falar(`Que nome maravilhoso, ${nomeSalvo}! Fiquei toda apaixonada, que coisa mais linda. Agora é só segurar e falar comigo quando quiser!`);
             }
         };
 
-        // FUNÇÃO QUE SALVA O NOME (TANTO FALADO QUANTO ESCRITO)
-        function salvarNome(nome) {
-            nomeSalvo = nome;
-            etapa = 2; // Muda para modo conversa
-            falar(`Prazer em te conhecer, ${nomeSalvo}! Agora eu nunca mais esqueço o seu nome. Pode falar ou perguntar o que quiser.`);
-        }
+        campoNome.addEventListener("keypress", (e) => e.key === "Enter" && botaoEnviar.click());
 
-        // RESPOSTAS DEPOIS QUE SABE O NOME
-        if(reconhecimento) {
-            const resultadoOriginal = reconhecimento.onresult;
-            reconhecimento.onresult = (event) => {
-                if(etapa === 2) {
-                    const falado = event.results[0][0].transcript.trim();
-                    const respostas = [
-                        `Entendi tudo, ${nomeSalvo}!`,
-                        `Que legal, ${nomeSalvo}!`,
-                        `Claro que sim, ${nomeSalvo}!`,
-                        `Tudo bem, ${nomeSalvo}!`,
-                        `Estou aqui, ${nomeSalvo}!`
-                    ];
-                    falar(respostas[Math.floor(Math.random() * respostas.length)]);
-                } else {
-                    resultadoOriginal(event);
-                }
-            };
-        }
-
-        // PRIMEIRO CLIQUE: ELA FALA "QUAL É O SEU NOME?"
+        // PRIMEIRA VEZ: ELA FALA
         botaoBola.onclick = () => {
             if(!iniciado) {
                 iniciado = true;
-                falar("Olá! Eu estou aqui. Qual é o seu nome? Você pode falar ou escrever.");
+                falar("Olá meu amor! Tudo bem com você? Eu sou sua assistente linda. Qual é o seu nome? Você pode segurar a bola e falar, ou escrever aí embaixo para mim.");
             }
         };
 
     </script>
 </body>
 </html>
+
