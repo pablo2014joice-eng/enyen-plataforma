@@ -1,140 +1,133 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Juliana IA Ultra Voz</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juliana IA</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
 
 <style>
-    body{
-        margin:0;
-        background:#0b0f1a;
-        overflow:hidden;
-        font-family:sans-serif;
-    }
 
-    .bg{
-        position:fixed;
-        inset:0;
-        background:
-        radial-gradient(circle at top,#7c3aed33,transparent 40%),
-        radial-gradient(circle at bottom,#06b6d433,transparent 40%),
-        #0b0f1a;
-    }
+body{
+    margin:0;
+    background:#0b1020;
+    overflow:hidden;
+    font-family:Arial;
+}
 
-    .bola{
-        width:260px;
-        height:260px;
-        border-radius:50%;
-        background:linear-gradient(135deg,#7c3aed,#ff0080);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-size:90px;
-        color:white;
-        cursor:pointer;
-        transition:0.25s;
-        box-shadow:
-        0 0 60px #7c3aed66,
-        0 0 120px #ff008044;
-        border:none;
-        position:relative;
-        z-index:10;
-    }
+.fundo{
+    position:fixed;
+    inset:0;
+    background:
+    radial-gradient(circle at top,#7c3aed44,transparent 40%),
+    radial-gradient(circle at bottom,#00d4ff22,transparent 40%),
+    #0b1020;
+}
 
-    .bola:hover{
-        transform:scale(1.04);
-    }
+.bola{
+    width:250px;
+    height:250px;
+    border-radius:50%;
+    border:none;
+    cursor:pointer;
+    transition:.25s;
+    color:white;
+    font-size:85px;
+    background:linear-gradient(135deg,#7c3aed,#ff0080);
+    box-shadow:
+    0 0 50px #7c3aed88,
+    0 0 100px #ff008055;
+}
 
-    .ouvindo{
-        animation:pulse .8s infinite;
-        background:linear-gradient(135deg,#06b6d4,#7c3aed);
-    }
+.bola:hover{
+    transform:scale(1.04);
+}
 
-    .falando{
-        animation:falar .6s infinite alternate;
-    }
+.ouvindo{
+    animation:pulse .8s infinite;
+    background:linear-gradient(135deg,#00d4ff,#7c3aed);
+}
 
-    @keyframes pulse{
-        0%{transform:scale(1);}
-        50%{transform:scale(1.15);}
-        100%{transform:scale(1);}
-    }
+.falando{
+    animation:falar .5s infinite alternate;
+}
 
-    @keyframes falar{
-        from{transform:scale(1);}
-        to{transform:scale(1.08);}
-    }
+@keyframes pulse{
+    0%{transform:scale(1)}
+    50%{transform:scale(1.12)}
+    100%{transform:scale(1)}
+}
 
-    input{
-        background:#111827;
-        color:white;
-        border:1px solid #374151;
-        outline:none;
-    }
+@keyframes falar{
+    from{transform:scale(1)}
+    to{transform:scale(1.06)}
+}
 
-    input:focus{
-        border-color:#06b6d4;
-    }
+input{
+    outline:none;
+}
+
 </style>
 </head>
 
-<body class="flex items-center justify-center min-h-screen text-white">
+<body class="text-white flex items-center justify-center min-h-screen">
 
-<div class="bg"></div>
+<div class="fundo"></div>
 
-<div class="relative z-10 flex flex-col items-center gap-6 px-4">
+<div class="relative z-10 flex flex-col items-center gap-5 px-4">
 
-    <h1 class="text-4xl font-bold text-center">
-        JULIANA IA
-    </h1>
+<h1 class="text-5xl font-bold">
+    JULIANA IA
+</h1>
 
-    <p id="info" class="text-center text-gray-300 text-lg max-w-md">
-        Clique na bola para iniciar
-    </p>
+<p id="texto" class="text-gray-300 text-center max-w-md text-lg">
+    Clique na bola para começar
+</p>
 
-    <button id="bola" class="bola">
-        <i class="fa-solid fa-microphone"></i>
-    </button>
+<button id="bola" class="bola">
+    <i class="fa-solid fa-microphone"></i>
+</button>
 
-    <p id="status" class="text-cyan-300 text-center">
-        Pronta...
-    </p>
+<p id="status" class="text-cyan-300">
+    Pronta...
+</p>
 
-    <div class="flex gap-2 flex-wrap justify-center">
-        <input
-            id="input"
-            type="text"
-            placeholder="Digite aqui..."
-            class="px-5 py-3 rounded-full w-72"
-        />
+<div class="flex gap-2 flex-wrap justify-center">
 
-        <button
-            id="enviar"
-            class="bg-cyan-400 text-black font-bold px-5 py-3 rounded-full"
-        >
-            Enviar
-        </button>
-    </div>
+<input
+id="entrada"
+type="text"
+placeholder="Digite qualquer coisa..."
+class="bg-gray-900 border border-gray-700 rounded-full px-5 py-3 w-72 text-center"
+/>
+
+<button
+id="btnEnviar"
+class="bg-cyan-400 text-black font-bold px-5 py-3 rounded-full">
+Enviar
+</button>
+
+</div>
 
 </div>
 
 <script>
 
 const bola = document.getElementById("bola");
-const info = document.getElementById("info");
+const texto = document.getElementById("texto");
 const statusTxt = document.getElementById("status");
-const input = document.getElementById("input");
-const enviar = document.getElementById("enviar");
+const entrada = document.getElementById("entrada");
+const btnEnviar = document.getElementById("btnEnviar");
 
 let recognition;
 let ouvindo = false;
 let iniciado = false;
 let nome = "";
-let vozSelecionada = null;
+let voz = null;
 
 const synth = window.speechSynthesis;
 
@@ -142,47 +135,56 @@ function carregarVoz(){
 
     const vozes = synth.getVoices();
 
-    vozSelecionada =
-        vozes.find(v => v.lang.includes("pt-BR") && v.name.includes("Microsoft")) ||
-        vozes.find(v => v.lang.includes("pt-BR") && v.name.includes("Google")) ||
-        vozes.find(v => v.lang.includes("pt")) ||
+    voz =
+        vozes.find(v =>
+            v.lang.includes("pt-BR") &&
+            v.name.toLowerCase().includes("microsoft")
+        )
+        ||
+        vozes.find(v =>
+            v.lang.includes("pt-BR")
+        )
+        ||
         vozes[0];
-
 }
 
 speechSynthesis.onvoiceschanged = carregarVoz;
 carregarVoz();
 
-function falar(texto){
+function falar(frase){
 
     synth.cancel();
 
-    const utter = new SpeechSynthesisUtterance(texto);
+    const msg = new SpeechSynthesisUtterance(frase);
 
-    utter.lang = "pt-BR";
+    msg.lang = "pt-BR";
 
-    if(vozSelecionada){
-        utter.voice = vozSelecionada;
+    if(voz){
+        msg.voice = voz;
     }
 
-    utter.rate = 1;
-    utter.pitch = 1;
-    utter.volume = 1;
+    msg.rate = 1;
+    msg.pitch = 1;
+    msg.volume = 1;
 
-    utter.onstart = () => {
+    msg.onstart = () => {
+
         bola.classList.add("falando");
+
         statusTxt.innerText = "Falando...";
     };
 
-    utter.onend = () => {
+    msg.onend = () => {
+
         bola.classList.remove("falando");
+
         statusTxt.innerText = "Pronta";
     };
 
-    synth.speak(utter);
+    synth.speak(msg);
 }
 
-function iniciarReconhecimento(){
+function iniciarIA(){
 
     const SpeechRecognition =
         window.SpeechRecognition ||
@@ -190,7 +192,8 @@ function iniciarReconhecimento(){
 
     if(!SpeechRecognition){
 
-        alert("Seu navegador não suporta reconhecimento de voz.");
+        statusTxt.innerText =
+        "Seu navegador não suporta voz";
 
         return;
     }
@@ -198,8 +201,11 @@ function iniciarReconhecimento(){
     recognition = new SpeechRecognition();
 
     recognition.lang = "pt-BR";
+
     recognition.continuous = false;
+
     recognition.interimResults = false;
+
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
@@ -217,74 +223,142 @@ function iniciarReconhecimento(){
 
         bola.classList.remove("ouvindo");
 
-        statusTxt.innerText = "Parou de ouvir";
+        statusTxt.innerText = "Pronta";
     };
 
     recognition.onerror = (e) => {
 
-        statusTxt.innerText = "Erro: " + e.error;
+        ouvindo = false;
+
+        bola.classList.remove("ouvindo");
+
+        if(e.error === "not-allowed"){
+
+            statusTxt.innerText =
+            "Permita o microfone no navegador";
+
+        }else{
+
+            statusTxt.innerText =
+            "Erro ao ouvir";
+        }
     };
 
     recognition.onresult = (event) => {
 
-        const texto = event.results[0][0].transcript;
+        const pergunta =
+        event.results[0][0].transcript;
 
-        info.innerText = "Você disse: " + texto;
+        texto.innerText =
+        "Você disse: " + pergunta;
 
-        responder(texto);
+        responder(pergunta);
     };
 }
 
-iniciarReconhecimento();
+iniciarIA();
 
-function responder(texto){
+function responder(pergunta){
 
-    const frase = texto.toLowerCase();
+    const p = pergunta.toLowerCase();
 
     let resposta = "";
 
     if(nome === ""){
 
-        nome = texto;
+        nome = pergunta;
 
-        resposta = `Prazer ${nome}, agora pode conversar comigo.`;
+        resposta =
+        `Prazer ${nome}, agora pode conversar comigo sobre qualquer coisa.`;
 
         falar(resposta);
 
         return;
     }
 
-    if(frase.includes("oi")){
+    if(
+        p.includes("oi") ||
+        p.includes("olá")
+    ){
 
-        resposta = `Oi ${nome}, tudo bem?`;
+        resposta =
+        `Oi ${nome}, como você está hoje?`;
+    }
 
-    }else if(frase.includes("hora")){
+    else if(
+        p.includes("hora")
+    ){
 
         const agora = new Date();
 
         resposta =
-        `Agora são ${agora.getHours()} horas e ${agora.getMinutes()} minutos`;
+        `Agora são ${agora.getHours()} horas e ${agora.getMinutes()} minutos.`;
+    }
 
-    }else if(frase.includes("clima")){
-
-        resposta = `Hoje o clima está muito agradável.`;
-
-    }else if(frase.includes("quem é você")){
-
-        resposta =
-        `Eu sou a Juliana, sua assistente virtual com voz humana.`;
-
-    }else if(frase.includes("tchau")){
-
-        resposta = `Até mais ${nome}.`;
-
-    }else{
+    else if(
+        p.includes("clima") ||
+        p.includes("tempo")
+    ){
 
         resposta =
-        `Entendi o que você falou ${nome}.`;
+        `Hoje o clima parece muito agradável.`;
+    }
+
+    else if(
+        p.includes("quem é você")
+    ){
+
+        resposta =
+        `Eu sou a Juliana, sua inteligência artificial com voz humana.`;
+    }
+
+    else if(
+        p.includes("tchau")
+    ){
+
+        resposta =
+        `Até mais ${nome}.`;
+    }
+
+    else if(
+        p.includes("meu nome")
+    ){
+
+        resposta =
+        `Seu nome é ${nome}.`;
+    }
+
+    else if(
+        p.includes("tudo bem")
+    ){
+
+        resposta =
+        `Estou muito bem ${nome}, obrigada por perguntar.`;
+    }
+
+    else{
+
+        resposta =
+        `Interessante ${nome}, gostei do que você falou.`;
     }
 
     falar(resposta);
+}
+
+function ouvir(){
+
+    if(!recognition) return;
+
+    if(ouvindo) return;
+
+    try{
+
+        recognition.start();
+
+    }catch(e){
+
+        console.log(e);
+    }
 }
 
 bola.addEventListener("click", () => {
@@ -293,58 +367,52 @@ bola.addEventListener("click", () => {
 
         iniciado = true;
 
-        falar("Olá, eu sou a Juliana. Qual é o seu nome?");
+        falar(
+        "Olá, eu sou a Juliana. Primeiro me diga o seu nome."
+        );
 
-        info.innerText =
-        "Fale seu nome segurando a bola ou digitando.";
+        texto.innerText =
+        "Agora segure a bola e fale.";
 
         return;
     }
 
-    if(recognition && !ouvindo){
-
-        try{
-            recognition.start();
-        }catch(e){}
-    }
+    ouvir();
 });
 
 bola.addEventListener("mousedown", () => {
 
-    if(recognition && iniciado){
+    if(iniciado){
 
-        try{
-            recognition.start();
-        }catch(e){}
+        ouvir();
     }
 });
 
 bola.addEventListener("touchstart", () => {
 
-    if(recognition && iniciado){
+    if(iniciado){
 
-        try{
-            recognition.start();
-        }catch(e){}
+        ouvir();
     }
 });
 
 function enviarTexto(){
 
-    const texto = input.value.trim();
+    const valor = entrada.value.trim();
 
-    if(texto === "") return;
+    if(valor === "") return;
 
-    info.innerText = "Você escreveu: " + texto;
+    texto.innerText =
+    "Você escreveu: " + valor;
 
-    responder(texto);
+    responder(valor);
 
-    input.value = "";
+    entrada.value = "";
 }
 
-enviar.onclick = enviarTexto;
+btnEnviar.onclick = enviarTexto;
 
-input.addEventListener("keypress",(e)=>{
+entrada.addEventListener("keypress",(e)=>{
 
     if(e.key === "Enter"){
 
