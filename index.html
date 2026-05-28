@@ -47,15 +47,29 @@
 </head>
 <body class="bg-fundo text-white font-jakarta h-screen flex flex-col items-center justify-center">
 
-    <p id="textoInfo" class="absolute top-20 text-lg text-gray-300">
+    <p id="textoInfo" class="absolute top-16 text-lg text-gray-300 text-center px-4">
         Clique na bola para começar
     </p>
 
+    <!-- BOLA PRINCIPAL -->
     <button id="botaoBola" class="bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer">
         <i class="fa fa-microphone"></i>
     </button>
 
-    <p id="status" class="absolute bottom-20 text-sm text-gray-400">
+    <!-- CAIXA PARA ESCREVER O NOME (SÓ APARECE QUANDO ELA PERGUNTA) -->
+    <div id="caixaEscrever" class="absolute bottom-20 flex gap-2 items-center hidden">
+        <input 
+            type="text" 
+            id="campoNome" 
+            placeholder="Ou escreva seu nome aqui..." 
+            class="px-4 py-3 rounded-full bg-gray-800 border border-gray-600 text-white w-64 focus:outline-none focus:border-azul"
+        >
+        <button id="botaoEnviar" class="px-5 py-3 rounded-full bg-azul text-black font-bold hover:bg-azul/80 transition">
+            Enviar
+        </button>
+    </div>
+
+    <p id="status" class="absolute bottom-40 text-sm text-gray-400">
         Aguardando...
     </p>
 
@@ -63,6 +77,9 @@
         const botaoBola = document.getElementById('botaoBola');
         const textoInfo = document.getElementById('textoInfo');
         const status = document.getElementById('status');
+        const caixaEscrever = document.getElementById('caixaEscrever');
+        const campoNome = document.getElementById('campoNome');
+        const botaoEnviar = document.getElementById('botaoEnviar');
 
         let nomeSalvo = "";
         let etapa = 1; // 1 = pedir nome | 2 = conversar
@@ -72,14 +89,14 @@
         const sintese = window.speechSynthesis;
         let reconhecimento;
 
-        // CONFIGURAÇÃO CERTA PARA OUVIR PORTUGUÊS
+        // CONFIGURAÇÃO PARA OUVIR
         if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
             const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
             reconhecimento = new Rec();
             reconhecimento.lang = 'pt-BR';
-            reconhecimento.interimResults = false; // SÓ PEGA QUANDO VOCÊ TERMINAR DE FALAR
+            reconhecimento.interimResults = false;
             reconhecimento.maxAlternatives = 1;
-            reconhecimento.continuous = false; // AGORA ELA OUVE UMA FRASE POR VEZ, IGUAL GENTE
+            reconhecimento.continuous = false;
         }
 
         // ELA FALA
@@ -95,18 +112,21 @@
                 status.textContent = "🔊 Falando...";
                 textoInfo.textContent = frase;
                 if(reconhecimento) reconhecimento.stop();
+                caixaEscrever.classList.add('hidden'); // Esconde caixa enquanto ela fala
             };
 
             fala.onend = () => {
                 botaoBola.className = "bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
                 
-                // SE ACABOU DE PERGUNTAR O NOME, AGORA ELA VAI OUVIR VOCÊ FALAR
+                // QUANDO ELA PERGUNTAR O NOME: MOSTRA CAIXA PARA ESCREVER E COMEÇA A OUVIR
                 if(etapa === 1) {
-                    status.textContent = "👂 AGORA FALE SEU NOME...";
-                    textoInfo.textContent = "Fale bem alto e claro...";
-                    if(reconhecimento) reconhecimento.start(); // COMEÇA A OUVIR AQUI
+                    status.textContent = "👂 FALE SEU NOME OU ESCREVA ABAIXO 👇";
+                    textoInfo.textContent = "Escolha como quer me dizer seu nome";
+                    caixaEscrever.classList.remove('hidden'); // MOSTRA A CAIXA DE ESCREVER
+                    if(reconhecimento) reconhecimento.start(); // COMEÇA A OUVIR TAMBÉM
                 } else {
                     status.textContent = `🎧 Sempre ouvindo, ${nomeSalvo}`;
+                    caixaEscrever.classList.add('hidden'); // Esconde caixa depois que já sabe o nome
                     if(reconhecimento) reconhecimento.start();
                 }
             };
@@ -114,31 +134,65 @@
             sintese.speak(fala);
         }
 
-        // QUANDO ELA ENTENDE O QUE VOCÊ FALOU
+        // === OPÇÃO 1: VOCÊ FALA O NOME E ELA OUVE ===
         if(reconhecimento) {
             reconhecimento.onresult = (event) => {
                 botaoBola.classList.remove('ouvindo');
-                // PEGA O QUE VOCÊ FALOU, CERTO, SEM ERRO
                 const oQueFalou = event.results[0][0].transcript.trim();
                 
-                status.textContent = "✅ Entendi: " + oQueFalou; // MOSTRA NA TELA O QUE ELA ENTENDEU
+                status.textContent = "✅ Entendi (voz): " + oQueFalou;
 
                 if(!oQueFalou) {
-                    textoInfo.textContent = "Não entendi, fala de novo...";
+                    textoInfo.textContent = "Não ouvi bem, fale de novo ou escreva...";
                     reconhecimento.start();
                     return;
                 }
 
-                // === AQUI É A PARTE PRINCIPAL: SALVAR O NOME ===
-                if(etapa === 1) {
-                    nomeSalvo = oQueFalou; // SALVA O NOME
-                    etapa = 2; // MUDA A ETAPA
-                    
-                    // ELA RESPONDE CHAMANDO VOCÊ PELO NOME
-                    falar(`Prazer em te conhecer, ${nomeSalvo}! Agora eu nunca mais esqueço o seu nome. Pode falar o que quiser agora.`);
-                } 
-                else {
-                    // DEPOIS DO NOME, RESPONDE QUALQUER COISA
+                salvarNome(oQueFalou);
+            };
+
+            reconhecimento.onerror = () => {
+                botaoBola.classList.remove('ouvindo');
+                textoInfo.textContent = "❌ Não ouvi, escreva seu nome aí embaixo";
+            };
+
+            reconhecimento.onspeechstart = () => {
+                botaoBola.classList.add('ouvindo');
+                status.textContent = "👂 OUVINDO VOCÊ...";
+                textoInfo.textContent = "...";
+            };
+
+            reconhecimento.onend = () => {
+                if(iniciado && etapa === 1) reconhecimento.start();
+                else if(iniciado && etapa === 2) reconhecimento.start();
+            };
+        }
+
+        // === OPÇÃO 2: VOCÊ ESCREVE O NOME E CLICA EM ENVIAR ===
+        botaoEnviar.onclick = () => {
+            const nomeDigitado = campoNome.value.trim();
+            if(nomeDigitado !== "") {
+                status.textContent = "✅ Entendi (escrito): " + nomeDigitado;
+                salvarNome(nomeDigitado);
+                campoNome.value = ""; // Limpa o campo
+            } else {
+                status.textContent = "⚠️ Escreva algo primeiro...";
+            }
+        };
+
+        // FUNÇÃO QUE SALVA O NOME (TANTO FALADO QUANTO ESCRITO)
+        function salvarNome(nome) {
+            nomeSalvo = nome;
+            etapa = 2; // Muda para modo conversa
+            falar(`Prazer em te conhecer, ${nomeSalvo}! Agora eu nunca mais esqueço o seu nome. Pode falar ou perguntar o que quiser.`);
+        }
+
+        // RESPOSTAS DEPOIS QUE SABE O NOME
+        if(reconhecimento) {
+            const resultadoOriginal = reconhecimento.onresult;
+            reconhecimento.onresult = (event) => {
+                if(etapa === 2) {
+                    const falado = event.results[0][0].transcript.trim();
                     const respostas = [
                         `Entendi tudo, ${nomeSalvo}!`,
                         `Que legal, ${nomeSalvo}!`,
@@ -146,28 +200,10 @@
                         `Tudo bem, ${nomeSalvo}!`,
                         `Estou aqui, ${nomeSalvo}!`
                     ];
-                    const escolhida = respostas[Math.floor(Math.random() * respostas.length)];
-                    falar(escolhida);
+                    falar(respostas[Math.floor(Math.random() * respostas.length)]);
+                } else {
+                    resultadoOriginal(event);
                 }
-            };
-
-            // SE DER ERRO OU NÃO ENTENDER
-            reconhecimento.onerror = (erro) => {
-                botaoBola.classList.remove('ouvindo');
-                textoInfo.textContent = "❌ Erro ou não ouvi bem, fala de novo...";
-                if(etapa === 1) reconhecimento.start();
-            };
-
-            // QUANDO VOCÊ COMEÇA A FALAR, BOLA MUDA DE COR
-            reconhecimento.onspeechstart = () => {
-                botaoBola.classList.add('ouvindo');
-                status.textContent = "👂 OUVINDO VOCÊ...";
-                textoInfo.textContent = "...";
-            };
-
-            // SE PARAR DE OUVIR, LIGA DE NOVO
-            reconhecimento.onend = () => {
-                if(iniciado && etapa !== 1) reconhecimento.start();
             };
         }
 
@@ -175,7 +211,7 @@
         botaoBola.onclick = () => {
             if(!iniciado) {
                 iniciado = true;
-                falar("Olá! Eu estou aqui. Qual é o seu nome?");
+                falar("Olá! Eu estou aqui. Qual é o seu nome? Você pode falar ou escrever.");
             }
         };
 
