@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Juliana IA Ultra</title>
+<title>Juliana IA</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -68,10 +68,6 @@ body{
     to{transform:scale(1.07)}
 }
 
-input{
-    outline:none;
-}
-
 </style>
 </head>
 
@@ -103,7 +99,7 @@ input{
 id="entrada"
 type="text"
 placeholder="Pergunte qualquer coisa..."
-class="bg-gray-900 border border-gray-700 rounded-full px-5 py-3 w-80 text-center"
+class="bg-gray-900 border border-gray-700 rounded-full px-5 py-3 w-80 text-center text-white"
 />
 
 <button
@@ -118,8 +114,8 @@ Enviar
 
 <script>
 
-// SUA CHAVE API INSERIDA ABAIXO:
-const API_KEY "AIzaSyDnUqQMcyy77rmtgERBw_GdN8KLF3qyC1Q";
+// COLOQUE SUA CHAVE AQUI
+const API_KEY = "AIzaSyDnUqQMcyy77rmtgERBw_GdN8KLF3qyC1Q";
 
 const bola = document.getElementById("bola");
 const texto = document.getElementById("texto");
@@ -152,6 +148,7 @@ function carregarVoz(){
 }
 
 speechSynthesis.onvoiceschanged = carregarVoz;
+
 carregarVoz();
 
 function falar(frase){
@@ -170,14 +167,14 @@ function falar(frase){
     msg.pitch = 1;
     msg.volume = 1;
 
-    msg.onstart = () => {
+    msg.onstart = ()=>{
 
         bola.classList.add("falando");
 
         statusTxt.innerText = "Falando...";
     };
 
-    msg.onend = () => {
+    msg.onend = ()=>{
 
         bola.classList.remove("falando");
 
@@ -196,7 +193,7 @@ function iniciarIA(){
     if(!SpeechRecognition){
 
         statusTxt.innerText =
-        "Seu navegador não suporta voz";
+        "Navegador sem suporte a voz";
 
         return;
     }
@@ -211,7 +208,7 @@ function iniciarIA(){
 
     recognition.maxAlternatives = 1;
 
-    recognition.onstart = () => {
+    recognition.onstart = ()=>{
 
         ouvindo = true;
 
@@ -220,7 +217,7 @@ function iniciarIA(){
         statusTxt.innerText = "Estou ouvindo...";
     };
 
-    recognition.onend = () => {
+    recognition.onend = ()=>{
 
         ouvindo = false;
 
@@ -229,7 +226,7 @@ function iniciarIA(){
         statusTxt.innerText = "Pronta";
     };
 
-    recognition.onerror = (e) => {
+    recognition.onerror = (e)=>{
 
         ouvindo = false;
 
@@ -247,7 +244,7 @@ function iniciarIA(){
         }
     };
 
-    recognition.onresult = async (event) => {
+    recognition.onresult = async (event)=>{
 
         const pergunta =
         event.results[0][0].transcript;
@@ -283,7 +280,7 @@ async function responderIA(pergunta){
                         parts:[
                             {
                                 text:
-`Você é Juliana, uma inteligência artificial feminina, inteligente, amigável e natural.
+`Você é Juliana, uma inteligência artificial feminina, amigável, inteligente e natural.
 
 Converse igual uma pessoa real.
 
@@ -327,12 +324,25 @@ function ouvir(){
 
     try{
 
-        recognition.start();
+        recognition.abort();
 
     }catch(e){}
+
+    setTimeout(()=>{
+
+        try{
+
+            recognition.start();
+
+        }catch(e){
+
+            console.log(e);
+        }
+
+    },200);
 }
 
-bola.addEventListener("click", () => {
+bola.addEventListener("click", ()=>{
 
     if(!iniciado){
 
@@ -351,15 +361,7 @@ bola.addEventListener("click", () => {
     ouvir();
 });
 
-bola.addEventListener("mousedown", () => {
-
-    if(iniciado){
-
-        ouvir();
-    }
-});
-
-bola.addEventListener("touchstart", () => {
+bola.addEventListener("pointerdown", ()=>{
 
     if(iniciado){
 
