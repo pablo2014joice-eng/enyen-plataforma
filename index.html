@@ -1,309 +1,107 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juliana - Inteligência Artificial</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        fundo: '#0F111A',
-                        roxo: '#7928CA',
-                        rosa: '#FF0080',
-                        azul: '#00F5FF',
-                    },
-                    fontFamily: {
-                        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .bola-estilo {
-                background: linear-gradient(135deg, #7928CA 0%, #FF0080 100%);
-                box-shadow: 0 0 60px rgba(121, 40, 202, 0.4), 0 0 120px rgba(255, 0, 128, 0.2);
-                transition: all 0.3s ease;
-                user-select: none;
-            }
-            .segurando {
-                transform: scale(1.2);
-                background: linear-gradient(135deg, #00F5FF 0%, #7928CA 100%);
-                box-shadow: 0 0 80px rgba(0, 245, 255, 0.7), 0 0 160px rgba(121, 40, 202, 0.5);
-            }
-            .falando {
-                transform: scale(1.05);
-                background: linear-gradient(135deg, #FF0080 0%, #7928CA 100%);
-                box-shadow: 0 0 70px rgba(255, 0, 128, 0.7), 0 0 140px rgba(121, 40, 202, 0.5);
-            }
-        }
+    <title>Orni - Inteligência Artificial com Voz e Legenda</title>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { height: 100vh; overflow: hidden; background: #000; }
+        .fundo { position: fixed; width: 100%; height: 100%; top: 0; left: 0; z-index: 0; }
+        .parte-cima { width: 100%; height: 50%; background: black; }
+        .parte-baixo { width: 100%; height: 50%; background: white; }
+        .container-orni { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1; transition: 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .bola { width: 140px; height: 140px; border-radius: 50%; margin: 0 auto; background: linear-gradient(to bottom, white 0%, #00ff88 35%, #0099ff 60%, black 100%); box-shadow: 0 0 20px #00ff88, 0 0 40px #0099ff; }
+        .container-orni.subir { transform: translate(-50%, -150%); }
+        .texto-status { margin-top: 25px; font-size: 20px; font-weight: bold; color: #333; }
+        .barra { width: 280px; height: 12px; background: #eee; border-radius: 10px; margin-top: 20px; overflow: hidden; }
+        .progresso { width: 0%; height: 100%; background: linear-gradient(to right, #00ff88, #0099ff); animation: carregar 5s linear forwards; }
+        .area-interacao { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 500px; display: none; z-index: 2; }
+        #input-usuario { width: 100%; padding: 15px; font-size: 16px; border: 2px solid #0099ff; border-radius: 12px; background: white; color: black; outline: none; }
+        #historico { margin-top: 15px; font-size: 18px; color: #333; text-align: left; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; min-height: 80px; }
+        @keyframes carregar { from { width: 0%; } to { width: 100%; } }
+        .esconder { display: none !important; }
     </style>
 </head>
-<body class="bg-fundo text-white font-jakarta h-screen flex flex-col items-center justify-center">
-
-    <p id="textoInfo" class="absolute top-16 text-lg text-gray-300 text-center px-4 transition-all">
-        🎤 SEGURE para falar | Ou ESCREVA abaixo
-    </p>
-
-    <!-- BOLA PRINCIPAL -->
-    <button 
-        id="botaoBola" 
-        class="bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer"
-        onmousedown="iniciarOuvir()" 
-        onmouseup="pararOuvir()"
-        ontouchstart="iniciarOuvir()" 
-        ontouchend="pararOuvir()"
-    >
-        <i class="fa fa-microphone"></i>
-    </button>
-
-    <!-- CAIXA DE TEXTO SEMPRE VISÍVEL -->
-    <div id="caixaTexto" class="absolute bottom-20 flex gap-2 items-center">
-        <input 
-            type="text" 
-            id="campoEntrada" 
-            placeholder="Escreva qualquer pergunta aqui..." 
-            class="px-4 py-3 rounded-full bg-gray-800 border border-gray-600 text-white w-72 text-center text-lg focus:outline-none focus:border-azul"
-        >
-        <button id="botaoEnviar" class="px-5 py-3 rounded-full bg-azul text-black font-bold text-lg hover:bg-azul/80 transition">
-            Enviar
-        </button>
+<body>
+    <div class="fundo">
+        <div class="parte-cima"></div>
+        <div class="parte-baixo"></div>
+    </div>
+    <div class="container-orni" id="container-orni">
+        <div class="bola"></div>
+        <div class="texto-status" id="texto-status">Iniciando Orni...</div>
+        <div class="barra" id="barra"><div class="progresso"></div></div>
+    </div>
+    <div class="area-interacao" id="area-interacao">
+        <input type="text" id="input-usuario" placeholder="Diga algo para a Orni..." autocomplete="off">
+        <div id="historico">Orni: Olá! Estou pronta.</div>
     </div>
 
-    <p id="status" class="absolute bottom-40 text-sm text-green-400 font-medium">
-        ✅ Conectada com Inteligência Artificial
-    </p>
-
     <script>
-        const botaoBola = document.getElementById('botaoBola');
-        const textoInfo = document.getElementById('textoInfo');
-        const status = document.getElementById('status');
-        const campoEntrada = document.getElementById('campoEntrada');
-        const botaoEnviar = document.getElementById('botaoEnviar');
+        const apiKey = ""; 
+        const containerOrni = document.getElementById("container-orni");
+        const input = document.getElementById("input-usuario");
+        const historico = document.getElementById("historico");
 
-        let nomeSalvo = "";
-        let etapa = 1;
-        let iniciado = false;
-        let vozHumana = null;
+        // Função que fala e escreve palavra por palavra
+        function falarComLegenda(texto) {
+            historico.innerHTML = "<strong>Orni:</strong> ";
+            const palavras = texto.split(" ");
+            let i = 0;
 
-        // ==============================================
-        // A SUA CHAVE API JÁ ESTÁ AQUI DENTRO
-        // ==============================================
-        const API_KEY = "AIzaSyDnUqQMcyy77rmtgERBw_GdN8KLF3qyC1Q"; 
-        const URL_IA = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
-
-        // ==============================================
-        // SISTEMA DE VOZ - JULIANA (VOZ HUMANA REAL)
-        // ==============================================
-        const sintese = window.speechSynthesis;
-        let reconhecimento;
-
-        function carregarVozHumana() {
-            const todasVozes = sintese.getVoices();
+            const msg = new SpeechSynthesisUtterance(texto);
+            msg.lang = 'pt-BR';
             
-            // PEGA A VOZ DA JULIANA, SEM VOZ DE ROBÔ
-            vozHumana = todasVozes.find(v => 
-                v.name.includes('Microsoft Juliana') || 
-                v.name.includes('Maria') || 
-                v.name.includes('Helena')
-            );
-
-            // GARANTE QUE NÃO PEGA A VOZ DO GOOGLE
-            if (!vozHumana) {
-                vozHumana = todasVozes.find(v => 
-                    v.lang === 'pt-BR' && !v.name.includes('Google')
-                );
-            }
-            if (!vozHumana) {
-                vozHumana = todasVozes.find(v => v.lang === 'pt-BR');
-            }
-        }
-        sintese.onvoiceschanged = carregarVozHumana;
-        carregarVozHumana();
-
-        // ==============================================
-        // SISTEMA DE OUVIR - 100% FUNCIONAL
-        // ==============================================
-        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-            const RecVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
-            reconhecimento = new RecVoz();
-            reconhecimento.lang = 'pt-BR';
-            reconhecimento.interimResults = false;
-            reconhecimento.maxAlternatives = 1;
-            reconhecimento.continuous = false;
+            // Evento que dispara conforme a voz vai falando
+            msg.onboundary = (event) => {
+                if (event.name === 'word') {
+                    if (i < palavras.length) {
+                        historico.innerHTML += palavras[i] + " ";
+                        i++;
+                    }
+                }
+            };
+            
+            window.speechSynthesis.speak(msg);
         }
 
-        // ==============================================
-        // FUNÇÃO PRINCIPAL: CONVERSAR COM A INTELIGÊNCIA ARTIFICIAL
-        // ==============================================
-        async function perguntarIA(perguntaTexto) {
-            status.textContent = "🤔 Pensando...";
-            
+        setTimeout(() => {
+            document.getElementById("texto-status").classList.add("esconder");
+            document.getElementById("barra").classList.add("esconder");
+            containerOrni.classList.add("subir");
+            document.getElementById("area-interacao").style.display = "block";
+            input.focus();
+        }, 5000);
+
+        async function perguntarOrni(pergunta) {
             try {
-                const resposta = await fetch(URL_IA, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: `Você é a Juliana, uma assistente amigável, educada e que fala de forma natural, igual uma pessoa normal. 
-                                A pessoa que está falando com você se chama ${nomeSalvo || 'amigo(a)'}. 
-                                Responda sempre de forma curta, direta, simpática e nunca seja robótica. 
-                                Não fale que é uma inteligência artificial, aja como uma amiga. 
-                                Pergunta dele: ${perguntaTexto}`
-                            }]
-                        }]
+                        contents: [{ parts: [{ text: "Você é a Orni. Responda de forma curta e direta a: " + pergunta }] }]
                     })
                 });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) { return "Desculpe, falha na conexão."; }
+        }
 
-                const dados = await resposta.json();
+        input.addEventListener("keypress", async (e) => {
+            if (e.key === 'Enter' && input.value.trim() !== "") {
+                const pergunta = input.value;
+                input.value = "";
+                historico.innerHTML = "<strong>Você:</strong> " + pergunta + "<br><br>";
                 
-                if (dados.candidates && dados.candidates[0].content.parts[0].text) {
-                    const textoResposta = dados.candidates[0].content.parts[0].text;
-                    falar(textoResposta);
-                } else {
-                    falar("Desculpa, não entendi direito, pode falar de novo?");
-                }
-
-            } catch (erro) {
-                console.log("Erro na API:", erro);
-                falar("Nossa, deu um pequeno erro aqui, mas pode perguntar de novo que eu tento responder.");
+                const resposta = await perguntarOrni(pergunta);
+                falarComLegenda(resposta);
             }
-        }
-
-        // ==============================================
-        // ELA FALA COM VOZ BONITA E NATURAL
-        // ==============================================
-        function falar(frase) {
-            sintese.cancel();
-            const mensagem = new SpeechSynthesisUtterance(frase);
-            mensagem.lang = 'pt-BR';
-            
-            if (vozHumana) {
-                mensagem.voice = vozHumana;
-            }
-
-            // CONFIGURAÇÃO PARA FALAR IGUAL GENTE
-            mensagem.rate = 1.05;   // Velocidade boa
-            mensagem.pitch = 1.1;   // Tom de voz feminino e doce
-            mensagem.volume = 1;
-
-            mensagem.onstart = () => {
-                botaoBola.className = "bola-estilo falando w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
-                status.textContent = "🔊 Falando...";
-                textoInfo.textContent = frase;
-            };
-
-            mensagem.onend = () => {
-                botaoBola.className = "bola-estilo w-72 h-72 rounded-full flex items-center justify-center text-white text-8xl border-none outline-none z-50 cursor-pointer";
-                status.textContent = "🎤 Pronta para ouvir novamente";
-            };
-
-            sintese.speak(mensagem);
-        }
-
-        // ==============================================
-        // SEGURAR PARA FALAR - AGORA SIM, FUNCIONA DE VERDADE
-        // ==============================================
-        function iniciarOuvir() {
-            if(!iniciado) return;
-
-            botaoBola.classList.add('segurando');
-            status.textContent = "👂 OUVINDO VOCÊ... FALE AGORA!";
-            textoInfo.textContent = "Estou prestando atenção em cada palavra...";
-            
-            if(reconhecimento) {
-                try { 
-                    reconhecimento.abort();
-                    reconhecimento.start(); 
-                } catch(erro) { 
-                    status.textContent = "⚠️ Erro na voz, ESCREVA LOGO ABAIXO!";
-                }
-            }
-        }
-
-        function pararOuvir() {
-            botaoBola.classList.remove('segurando');
-            status.textContent = "⏳ Entendendo e pensando na resposta...";
-            
-            if(reconhecimento) {
-                reconhecimento.stop(); 
-            }
-        }
-
-        // ==============================================
-        // QUANDO ELA OUVIR VOCÊ
-        // ==============================================
-        if(reconhecimento) {
-            reconhecimento.onresult = (evento) => {
-                const oQueFalou = evento.results[0][0].transcript.trim();
-                status.textContent = "✅ Você disse: " + oQueFalou;
-
-                if(!oQueFalou) {
-                    status.textContent = "❌ Não ouvi bem, ESCREVA LOGO ABAIXO!";
-                    return;
-                }
-
-                // ETAPA 1: PEGAR O NOME
-                if(etapa === 1) {
-                    nomeSalvo = oQueFalou;
-                    etapa = 2;
-                    falar(`Que prazer te conhecer, ${nomeSalvo}! Que nome bonito. Agora pode me perguntar qualquer coisa, sobre qualquer assunto, que eu vou saber te responder.`);
-                } 
-                // ETAPA 2: MANDA SUA PERGUNTA PARA A INTELIGÊNCIA ARTIFICIAL
-                else {
-                    perguntarIA(oQueFalou);
-                }
-            };
-
-            reconhecimento.onerror = () => {
-                status.textContent = "❌ Voz não funcionou, ESCREVA que funciona 100%!";
-            };
-        }
-
-        // ==============================================
-        // ESCREVER - TAMBÉM MANDA PARA A INTELIGÊNCIA
-        // ==============================================
-        botaoEnviar.onclick = () => {
-            const textoDigitado = campoEntrada.value.trim();
-            if(textoDigitado === "") return;
-
-            status.textContent = "✅ Você escreveu: " + textoDigitado;
-            
-            if(etapa === 1) {
-                nomeSalvo = textoDigitado;
-                etapa = 2;
-                falar(`Perfeito, ${nomeSalvo}! Agora somos amigos. Pergunta aí o que você quiser saber.`);
-            } else {
-                perguntarIA(textoDigitado);
-            }
-
-            campoEntrada.value = "";
-        };
-
-        campoEntrada.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") botaoEnviar.click();
         });
-
-        // ==============================================
-        // INÍCIO
-        // ==============================================
-        botaoBola.onclick = () => {
-            if(!iniciado) {
-                iniciado = true;
-                falar("Olá! Eu sou a Juliana, sua amiga inteligente. Qual é o seu nome? Você pode segurar a bola e falar, ou escrever aí embaixo.");
-            }
-        };
-
     </script>
 </body>
 </html>
+
+```
