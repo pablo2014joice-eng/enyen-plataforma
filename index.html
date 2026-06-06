@@ -1,12 +1,1054 @@
-<!doctype html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Orni - Assistente de Voz Virtual</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orni - Assistente Virtual Esfera</title>
+    <!-- Tailwind CSS para Estilização de Elite -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bibliotecas Core do React no Navegador -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Compilador Babel para converter JSX em Tempo de Execução -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Animações e Efeitos Visuais Personalizados */
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.4)); }
+            50% { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 0 25px rgba(16, 185, 129, 0.6)); }
+        }
+        @keyframes floatEffect {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(1deg); }
+        }
+        @keyframes waveAnimation {
+            0%, 100% { transform: scaleY(0.3); }
+            50% { transform: scaleY(1); }
+        }
+        .animate-float {
+            animation: floatEffect 5s ease-in-out infinite;
+        }
+        .animate-float-listen {
+            animation: floatEffect 2.5s ease-in-out infinite, pulseGlow 1.5s ease-in-out infinite;
+        }
+        .wave-bar {
+            animation: waveAnimation 1.2s ease-in-out infinite;
+        }
+        /* Custom scrollbar para o Chat */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 99px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-[#070b13] text-slate-200 font-sans min-h-screen flex items-center justify-center p-4 overflow-x-hidden relative select-none">
+
+    <!-- Focos de Luz Holográfica em Background -->
+    <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-950/20 rounded-full blur-[130px] pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] right-[10%] w-[60%] h-[60%] bg-indigo-950/15 rounded-full blur-[150px] pointer-events-none"></div>
+
+    <!-- Div Principal onde o React vai Desabrochar -->
+    <div id="root" class="w-full max-w-lg z-10"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Pré-configurações de Personalização da Orni
+        const COLOR_PRESETS = [
+            { id: '#2563eb', name: 'Azul', bg: 'bg-blue-600' },
+            { id: '#a855f7', name: 'Roxo', bg: 'bg-purple-500' },
+            { id: '#10b981', name: 'Verde', bg: 'bg-emerald-500' },
+            { id: '#f43f5e', name: 'Rosa', bg: 'bg-rose-500' },
+            { id: '#f59e0b', name: 'Laranja', bg: 'bg-amber-500' },
+            { id: '#fbbf24', name: 'Dourado', bg: 'bg-yellow-500' },
+            { id: '#ef4444', name: 'Vermelho', bg: 'bg-red-500' },
+            { id: '#0ea5e9', name: 'Ciano', bg: 'bg-sky-400' },
+        ];
+
+        const HAT_PRESETS = [
+            { id: 'none', label: 'Sem Chapéu', icon: '❌' },
+            { id: 'mago', label: 'Mago', icon: '🧙‍♂️' },
+            { id: 'cartola', label: 'Cartola', icon: '🎩' },
+            { id: 'cauboi', label: 'Caubói', icon: '🤠' },
+            { id: 'coroa', label: 'Coroa Imperial', icon: '👑' },
+        ];
+
+        const CAP_PRESETS = [
+            { id: 'none', label: 'Sem Boné', icon: '❌' },
+            { id: 'snapback', label: 'Snapback', icon: '🧢' },
+            { id: 'propeller', label: 'Propulsor', icon: '🛸' },
+            { id: 'bandana', label: 'Bandana', icon: '🏴‍☠️' },
+        ];
+
+        const GLASSES_PRESETS = [
+            { id: 'none', label: 'Sem Óculos', icon: '❌' },
+            { id: 'shades', label: 'Cyber Shades', icon: '🕶️' },
+            { id: 'geek', label: 'Geek Clássico', icon: '👓' },
+            { id: 'heart', label: 'Coração', icon: '❤️' },
+            { id: 'monocle', label: 'Monóculo', icon: '🧐' },
+        ];
+
+        const ITEM_PRESETS = [
+            { id: 'none', label: 'Sem Item', icon: '❌' },
+            { id: 'wand', label: 'Varinha Mágica', icon: '🪄' },
+            { id: 'balloon', label: 'Balão Flutuante', icon: '🎈' },
+            { id: 'gamepad', label: 'Gamepad', icon: '🎮' },
+            { id: 'drink', label: 'Bubble Tea', icon: '🧋' },
+            { id: 'wings', label: 'Asas de Anjo', icon: '👼' },
+        ];
+
+        const BODY_PRESETS = [
+            { id: 'none', label: 'Sem Enfeite', icon: '❌' },
+            { id: 'bowtie', label: 'Gravata Borboleta', icon: '🎀' },
+            { id: 'necklace', label: 'Medalhão', icon: '🏅' },
+            { id: 'scarf', label: 'Cachecol Cozy', icon: '🧣' },
+        ];
+
+        // --- SISTEMAS DE SUPORTE ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        // --- COMPONENTE 1: RENDERIZAÇÃO DA ORBIS E ACESSÓRIOS (SVG) ---
+        function OrniSphere({ 
+            state, 
+            onEvolved, 
+            onPointerDown, 
+            onPointerUp, 
+            isListening,
+            sphereColor1,
+            sphereColor2,
+            hatType, hatColor1, hatColor2,
+            glassesType, glassesColor1, glassesColor2,
+            capType, capColor1, capColor2,
+            itemType, itemColor1, itemColor2,
+            bodyType, bodyColor1, bodyColor2
+        }) {
+            const [clickCount, setClickCount] = useState(0);
+            const [isShaking, setIsShaking] = useState(false);
+            const [particles, setParticles] = useState([]);
+            const containerRef = useRef(null);
+            const maxClicks = 6;
+
+            const handleInitialClick = (e) => {
+                if (state !== 'initial') return;
+                setIsShaking(true);
+                setTimeout(() => setIsShaking(false), 300);
+
+                const current = clickCount + 1;
+                setClickCount(current);
+
+                // Criar faíscas eletrostáticas
+                const rect = containerRef.current.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                const newParticles = Array.from({ length: 8 }, (_, i) => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 2;
+                    return {
+                        id: `spark-${Date.now()}-${i}-${Math.random()}`,
+                        x: clickX,
+                        y: clickY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        size: Math.random() * 3 + 2,
+                        color: ['#60a5fa', '#34d399', '#ffffff'][Math.floor(Math.random() * 3)]
+                    };
+                });
+                setParticles(prev => [...prev, ...newParticles]);
+
+                if (current >= maxClicks) {
+                    // Explosão final de energia
+                    const finalParticles = Array.from({ length: 30 }, (_, i) => {
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = Math.random() * 6 + 3;
+                        return {
+                            id: `boom-${Date.now()}-${i}-${Math.random()}`,
+                            x: 100,
+                            y: 100,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            size: Math.random() * 4 + 2,
+                            color: ['#10b981', '#34d399', '#60a5fa', '#ffffff'][Math.floor(Math.random() * 4)]
+                        };
+                    });
+                    setParticles(prev => [...prev, ...finalParticles]);
+                    setTimeout(() => {
+                        onEvolved();
+                    }, 500);
+                }
+            };
+
+            // Loop de atualização de física de partículas simples
+            useEffect(() => {
+                if (particles.length === 0) return;
+                const frame = requestAnimationFrame(() => {
+                    setParticles(prev => prev.map(p => ({
+                        ...p,
+                        x: p.x + p.vx,
+                        y: p.y + p.vy,
+                        vx: p.vx * 0.95,
+                        vy: p.vy * 0.95 + 0.05, // efeito de gravidade leve
+                        size: Math.max(0, p.size - 0.08)
+                    })).filter(p => p.size > 0));
+                });
+                return () => cancelAnimationFrame(frame);
+            }, [particles]);
+
+            // SVGs para Acessórios Customizados
+            const renderHat = () => {
+                if (hatType === 'mago') return (
+                    <g fill={hatColor1}>
+                        <polygon points="100,10 65,55 135,55" />
+                        <ellipse cx="100" cy="55" rx="42" ry="7" />
+                        <polygon points="85,35 115,35 100,10" fill={hatColor2 || '#fbbf24'} opacity="0.3" />
+                        <circle cx="100" cy="15" r="4.5" fill="#f59e0b" />
+                    </g>
+                );
+                if (hatType === 'cartola') return (
+                    <g>
+                        <path d="M 75,52 L 72,15 L 128,15 L 125,52 Z" fill={hatColor1} />
+                        <rect x="71" y="44" width="58" height="8" fill={hatColor2} />
+                        <ellipse cx="100" cy="52" rx="40" ry="6" fill={hatColor1} />
+                    </g>
+                );
+                if (hatType === 'cauboi') return (
+                    <g fill={hatColor1}>
+                        <path d="M 64,50 Q 100,32 136,50 L 132,32 Q 100,28 68,32 Z" />
+                        <ellipse cx="100" cy="50" rx="48" ry="7" />
+                        <ellipse cx="100" cy="45" rx="30" ry="1" fill={hatColor2} />
+                    </g>
+                );
+                if (hatType === 'coroa') return (
+                    <g>
+                        <polygon points="65,50 67,23 82,38 100,18 118,38 133,23 135,50" fill={hatColor1} stroke={hatColor2} strokeWidth="1" />
+                        <ellipse cx="100" cy="50" rx="38" ry="5" fill={hatColor1} />
+                        <circle cx="100" cy="18" r="3" fill="#f59e0b" />
+                        <circle cx="67" cy="23" r="2.5" fill="#ef4444" />
+                        <circle cx="133" cy="23" r="2.5" fill="#ef4444" />
+                    </g>
+                );
+                return null;
+            };
+
+            const renderCap = () => {
+                if (capType === 'snapback') return (
+                    <g>
+                        <ellipse cx="100" cy="50" rx="38" ry="14" fill={capColor1} />
+                        <path d="M 62,50 Q 80,56 125,55 L 135,48 Q 100,42 62,50 Z" fill={capColor2 || '#1e293b'} />
+                    </g>
+                );
+                if (capType === 'propeller') return (
+                    <g>
+                        <ellipse cx="100" cy="48" rx="36" ry="12" fill={capColor1} />
+                        <line x1="100" y1="46" x2="100" y2="30" stroke="#94a3b8" strokeWidth="3" />
+                        <path d="M 72,30 L 128,30 M 100,30 L 100,28" stroke={capColor2} strokeWidth="4.5" strokeLinecap="round" />
+                    </g>
+                );
+                if (capType === 'bandana') return (
+                    <g fill={capColor1}>
+                        <path d="M 65,48 H 135 V 58 L 100,64 Z" />
+                        <polygon points="135,52 145,55 137,60" fill={capColor2} />
+                    </g>
+                );
+                return null;
+            };
+
+            const renderGlasses = () => {
+                if (glassesType === 'shades') return (
+                    <g fill={glassesColor1}>
+                        <rect x="64" y="80" width="30" height="15" rx="5" />
+                        <rect x="106" y="80" width="30" height="15" rx="5" />
+                        <line x1="94" y1="84" x2="106" y2="84" stroke={glassesColor1} strokeWidth="3" />
+                        <polygon points="68,82 90,82 86,92 68,92" fill={glassesColor2} opacity="0.3" />
+                        <polygon points="110,82 132,82 128,92 110,92" fill={glassesColor2} opacity="0.3" />
+                    </g>
+                );
+                if (glassesType === 'geek') return (
+                    <g fill="none" stroke={glassesColor1} strokeWidth="3.5">
+                        <circle cx="78" cy="85" r="14" />
+                        <circle cx="122" cy="85" r="14" />
+                        <line x1="92" y1="85" x2="108" y2="85" />
+                    </g>
+                );
+                if (glassesType === 'heart') return (
+                    <g fill={glassesColor2} stroke={glassesColor1} strokeWidth="1.5">
+                        <path d="M 78,74 C 70,68 64,80 78,92 C 92,80 86,68 78,74 Z" />
+                        <path d="M 122,74 C 114,68 108,80 122,92 C 136,80 130,68 122,74 Z" />
+                        <line x1="91" y1="84" x2="109" y2="84" stroke={glassesColor1} strokeWidth="2.5" />
+                    </g>
+                );
+                if (glassesType === 'monocle') return (
+                    <g>
+                        <circle cx="78" cy="85" r="14" fill="none" stroke={glassesColor1} strokeWidth="3" />
+                        <line x1="92" y1="85" x2="148" y2="105" stroke={glassesColor2} strokeWidth="1.5" />
+                    </g>
+                );
+                return null;
+            };
+
+            const renderItem = () => {
+                if (itemType === 'wand') return (
+                    <g>
+                        <line x1="140" y1="120" x2="175" y2="70" stroke="#78350f" strokeWidth="5" strokeLinecap="round" />
+                        <path d="M 175,70 L 170,55 L 185,62 L 195,50 L 193,66 L 208,70 L 193,76 L 195,92 L 184,81 L 170,88 Z" fill={itemColor1} />
+                    </g>
+                );
+                if (itemType === 'balloon') return (
+                    <g>
+                        <line x1="135" y1="100" x2="160" y2="35" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3,3" />
+                        <ellipse cx="164" cy="22" rx="14" ry="18" fill={itemColor1} />
+                        <polygon points="160,39 168,39 164,35" fill={itemColor2} />
+                    </g>
+                );
+                if (itemType === 'gamepad') return (
+                    <g fill={itemColor1}>
+                        <rect x="135" y="105" width="28" height="15" rx="4" />
+                        <circle cx="140" cy="112" r="2.5" fill={itemColor2} />
+                        <circle cx="152" cy="110" r="1.5" fill="#fff" />
+                        <circle cx="156" cy="114" r="1.5" fill="#fff" />
+                    </g>
+                );
+                if (itemType === 'drink') return (
+                    <g>
+                        <rect x="135" y="105" width="15" height="24" rx="2" fill="#fff" opacity="0.8" />
+                        <line x1="148" y1="100" x2="140" y2="120" stroke={itemColor1} strokeWidth="3" />
+                        <circle cx="140" cy="120" r="1.5" fill="#000" />
+                        <circle cx="145" cy="122" r="1.5" fill="#000" />
+                        <circle cx="142" cy="125" r="1.5" fill="#000" />
+                    </g>
+                );
+                if (itemType === 'wings') return (
+                    <g fill={itemColor1} opacity="0.75" filter="drop-shadow(0 0 4px rgba(255,255,255,0.2))">
+                        <path d="M 45,95 C 10,75 2,120 45,115 C 20,135 25,160 55,140 Z" />
+                        <path d="M 155,95 C 190,75 198,120 155,115 C 180,135 175,160 145,140 Z" />
+                    </g>
+                );
+                return null;
+            };
+
+            const renderBody = () => {
+                if (bodyType === 'bowtie') return (
+                    <g fill={bodyColor1}>
+                        <polygon points="85,122 100,128 85,134" />
+                        <polygon points="115,122 100,128 115,134" />
+                        <circle cx="100" cy="128" r="4" fill={bodyColor2} />
+                    </g>
+                );
+                if (bodyType === 'necklace') return (
+                    <g>
+                        <path d="M 74,103 Q 100,128 126,103" fill="none" stroke={bodyColor2 || '#1e293b'} strokeWidth="3" />
+                        <circle cx="100" cy="120" r="6" fill={bodyColor1} />
+                        <circle cx="100" cy="120" r="2.5" fill="#ffffff" />
+                    </g>
+                );
+                if (bodyType === 'scarf') return (
+                    <path d="M 68,110 Q 100,125 132,110 L 122,135 L 110,133 Z" fill={bodyColor1} stroke={bodyColor2} strokeWidth="1.5" />
+                );
+                return null;
+            };
+
+            if (state === 'initial') {
+                return (
+                    <div 
+                        ref={containerRef}
+                        onClick={handleInitialClick}
+                        className={`w-[200px] h-[200px] relative transition duration-300 cursor-pointer ${isShaking ? 'scale-95' : 'hover:scale-[1.02]'}`}
+                    >
+                        {/* Esfera em Carregamento Eletrostático */}
+                        <svg className="w-full h-full" viewBox="0 0 200 200">
+                            {/* Halo Rotativo */}
+                            <circle cx="100" cy="100" r="82" fill="none" stroke="rgba(59, 130, 246, 0.15)" strokeWidth="1" />
+                            <circle 
+                                cx="100" cy="100" r="82" 
+                                fill="none" stroke="#2563eb" strokeWidth="3.5" 
+                                strokeDasharray={`${(clickCount / maxClicks) * 515} 515`}
+                                className="transition-all duration-300 transform -rotate-90 origin-center"
+                                filter="drop-shadow(0 0 6px #2563eb)"
+                            />
+
+                            {/* Corpo Principal Eletrostático */}
+                            <circle cx="100" cy="100" r="50" fill="url(#solidSphereGradient)" filter="drop-shadow(0 0 15px rgba(37,99,235,0.4))" />
+                            
+                            {/* Raios de Eletricidade */}
+                            {clickCount > 0 && (
+                                <g stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" opacity="0.8">
+                                    <path d="M 100,50 L 98,70 L 102,80 L 100,100" />
+                                    {clickCount > 2 && <path d="M 150,100 L 130,98 L 120,102 L 100,100" />}
+                                    {clickCount > 4 && <path d="M 100,150 L 102,130 L 98,120 L 100,100" />}
+                                </g>
+                            )}
+
+                            {/* Partículas e Faíscas Dinâmicas */}
+                            {particles.map(p => (
+                                <circle key={p.id} cx={p.x} cy={p.y} r={p.size} fill={p.color} />
+                            ))}
+
+                            {/* Definições de Gradients do SVG */}
+                            <defs>
+                                <radialGradient id="solidSphereGradient" cx="40%" cy="40%" r="60%">
+                                    <stop offset="0%" stopColor="#60a5fa" />
+                                    <stop offset="65%" stopColor="#2563eb" />
+                                    <stop offset="100%" stopColor="#1e3a8a" />
+                                </radialGradient>
+                            </defs>
+                        </svg>
+
+                        {/* Indicador de Cliques */}
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                            <span class="text-xs uppercase font-mono font-bold tracking-widest text-[#2563eb] animate-pulse">CARREGAR</span>
+                            <span class="text-[10px] font-mono font-bold text-slate-400 mt-0.5">{clickCount}/{maxClicks}</span>
+                        </div>
+                    </div>
+                );
+            }
+
+            // VERSÃO EVOLUÍDA COMPLETA DO ORNI
+            const sphereGradientStyle = sphereColor2 
+                ? { background: `radial-gradient(circle at 35% 35%, ${sphereColor1} 0%, ${sphereColor2} 100%)` }
+                : { background: `radial-gradient(circle at 35% 35%, ${sphereColor1} 0%, ${Math.min(0, 0)} 100%)`, backgroundColor: sphereColor1 };
+
+            return (
+                <div 
+                    ref={containerRef}
+                    onPointerDown={onPointerDown}
+                    onPointerUp={onPointerUp}
+                    className={`relative w-[210px] h-[210px] select-none cursor-pointer transition-transform shrink-0 ${isListening ? 'animate-float-listen' : 'animate-float'}`}
+                >
+                    {/* Ring de Escuta Ativa */}
+                    {isListening && (
+                        <div className="absolute inset-[-10px] bg-emerald-500/10 rounded-full animate-ping border border-emerald-500/20" />
+                    )}
+
+                    {/* Esfera Principal */}
+                    <div 
+                        style={sphereGradientStyle}
+                        className="w-[140px] h-[140px] rounded-full absolute left-[35px] top-[35px] shadow-[0_0_25px_rgba(255,255,255,0.05),inset_0_-8px_20px_rgba(0,0,0,0.4)] flex items-center justify-center transition-all duration-300"
+                    >
+                        {/* Brilhos Dinâmicos dos Olhos */}
+                        <div className="flex gap-7 absolute mt-[-10px]">
+                            {/* Olho Esquerdo */}
+                            <div className="w-[11px] h-[14px] bg-slate-950 rounded-full flex items-start justify-center pt-1 shadow-inner relative">
+                                <span className="w-1.5 h-1.5 bg-white rounded-full absolute top-1 left-1" />
+                            </div>
+                            {/* Olho Direito */}
+                            <div className="w-[11px] h-[14px] bg-slate-950 rounded-full flex items-start justify-center pt-1 shadow-inner relative">
+                                <span className="w-1.5 h-1.5 bg-white rounded-full absolute top-1 left-1" />
+                            </div>
+                        </div>
+
+                        {/* Boca Doce / Sorriso da Esfera */}
+                        <div className="w-5 h-2 border-b-2 border-slate-950 rounded-b-full absolute mt-8"></div>
+                    </div>
+
+                    {/* Overlay dos Acessórios e Enfeites por cima em SVG */}
+                    <svg className="absolute inset-0 pointer-events-none z-20 w-full h-full" viewBox="0 0 200 200">
+                        {renderHat()}
+                        {renderCap()}
+                        {renderGlasses()}
+                        {renderItem()}
+                        {renderBody()}
+                        
+                        {/* Partículas ativas no Ar */}
+                        {particles.map(p => (
+                            <circle key={p.id} cx={p.x} cy={p.y} r={p.size} fill={p.color} />
+                        ))}
+                    </svg>
+                </div>
+            );
+        }
+
+        // --- COMPONENTE 2: CHAT PANEL ---
+        function ChatPanel({ messages, isThinking, isSpeaking, isListening, handleSendMessage, isMicSupported }) {
+            const containerRef = useRef(null);
+
+            useEffect(() => {
+                if (containerRef.current) {
+                    containerRef.current.scrollTop = containerRef.current.scrollHeight;
+                }
+            }, [messages, isThinking]);
+
+            return (
+                <div className="w-full flex flex-col h-[400px] bg-slate-900/40 border border-slate-800/80 rounded-3xl relative overflow-hidden backdrop-blur-md">
+                    {/* Lista das Conversas */}
+                    <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        {messages.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-center space-y-2 opacity-50 px-4">
+                                <span className="text-xl">💤</span>
+                                <p className="text-xs font-mono font-medium uppercase tracking-wider text-slate-400">Canal de Chat Desocupado</p>
+                            </div>
+                        ) : (
+                            messages.map(msg => (
+                                <div 
+                                    key={msg.id} 
+                                    className={`flex items-start gap-2.5 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
+                                >
+                                    <div className={`p-2.5 rounded-2xl text-xs leading-relaxed ${
+                                        msg.role === 'user' 
+                                            ? 'bg-emerald-500 text-slate-950 font-medium rounded-tr-none' 
+                                            : 'bg-white/5 border border-white/5 text-slate-200 rounded-tl-none'
+                                    }`}>
+                                        {msg.text}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+
+                        {/* Sinalizador de Pensando da Orni */}
+                        {isThinking && (
+                            <div className="flex items-start gap-2 max-w-[80%] animate-pulse">
+                                <div className="bg-slate-800 px-3 py-2 rounded-2xl text-xs text-slate-400 font-mono">
+                                    Orni está a pensar... 🤔
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Monitor de Sons - Ondas Sonoras Dinâmicas se estiver a Falar ou Ouvir */}
+                    {(isSpeaking || isListening) && (
+                        <div className="absolute right-4 bottom-22 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                            <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400">
+                                {isListening ? 'Ouvindo Voz' : 'Orni Falando'}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Painel de Instruções de Voz (Segurar a Orni) */}
+                    <div className="p-4 bg-slate-950/85 border-t border-slate-800/80 flex flex-col items-center justify-center text-center space-y-2 py-5">
+                        <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs uppercase tracking-wider">
+                            <svg className="w-4 h-4 animate-pulse fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2">
+                                <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+                                <path d="M21 10c0 4.2-3.4 8-8 8s-8-3.8-8-8"></path>
+                                <line x1="12" y1="18" x2="12" y2="22"></line>
+                            </svg>
+                            <span>Segura na Orni para falar!</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 max-w-xs leading-normal">
+                            Pressiona e mantém premido o clique na esfera Orni para ativares a voz. Solta quando terminares de falar e ela responderá!
+                        </p>
+                        {!isMicSupported && (
+                            <div className="text-[10px] text-rose-450 font-mono flex items-center justify-center gap-1 border border-rose-900/40 bg-rose-950/20 px-2.5 py-1 rounded-xl">
+                                <span>Permite o acesso ao microfone no topo do teu navegador.</span>
+                            </div>
+                        )}
+                        <p className="text-[8px] text-slate-500 font-mono uppercase tracking-widest mt-1">
+                            Modo de Resposta Automática Ativa
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- COMPONENTE 3: ESTÚDIO DE CRIAÇÃO (SIDEBAR DE CUSTOMIZAÇÃO) ---
+        function SphereCustomizer({
+            sphereColor1, setSphereColor1,
+            sphereColor2, setSphereColor2,
+            hatType, setHatType,
+            hatColor1, setHatColor1,
+            hatColor2, setHatColor2,
+            glassesType, setGlassesType,
+            glassesColor1, setGlassesColor1,
+            glassesColor2, setGlassesColor2,
+            capType, setCapType,
+            capColor1, setCapColor1,
+            capColor2, setCapColor2,
+            itemType, setItemType,
+            itemColor1, setItemColor1,
+            itemColor2, setItemColor2,
+            bodyType, setBodyType,
+            bodyColor1, setBodyColor1,
+            bodyColor2, setBodyColor2
+        }) {
+            const [syncColors, setSyncColors] = useState(true);
+            const [activeTab, setActiveTab] = useState('corpo');
+
+            const handleUpdateColor1 = (color) => {
+                setSphereColor1(color);
+                if (syncColors) {
+                    setHatColor1(color);
+                    setGlassesColor1(color);
+                    setCapColor1(color);
+                    setBodyColor1(color);
+                }
+            };
+
+            const handleUpdateColor2 = (color) => {
+                setSphereColor2(color);
+                if (syncColors) {
+                    setHatColor2(color);
+                    setGlassesColor2(color);
+                    setCapColor2(color);
+                    setBodyColor2(color);
+                }
+            };
+
+            return (
+                <div className="w-full bg-slate-950/95 border border-slate-800/80 p-5 rounded-[28px] space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                        <span className="text-[11px] font-bold tracking-wider text-sky-400 font-mono uppercase">Estúdio de Criação 🛠️</span>
+                        <button 
+                            onClick={() => {
+                                const next = !syncColors;
+                                setSyncColors(next);
+                                if (next) {
+                                    setHatColor1(sphereColor1);
+                                    setGlassesColor1(sphereColor1);
+                                    setCapColor1(sphereColor1);
+                                    setBodyColor1(sphereColor1);
+                                }
+                            }}
+                            className={`px-3 py-1 rounded-full text-[9px] font-mono border transition ${
+                                syncColors ? 'bg-sky-500/10 border-sky-400 text-sky-300' : 'bg-white/5 border-white/5 text-slate-400'
+                            }`}
+                        >
+                            Sincronizar Cores {syncColors ? '🔄' : '❌'}
+                        </button>
+                    </div>
+
+                    {/* Abas do Estúdio */}
+                    <div className="grid grid-cols-5 gap-1 bg-white/[0.02] p-1 rounded-xl">
+                        {['corpo', 'chapeus', 'bones', 'oculos', 'itens'].map(t => (
+                            <button
+                                key={t}
+                                onClick={() => setActiveTab(t)}
+                                className={`py-1.5 rounded-lg text-[9px] uppercase font-mono font-bold transition ${
+                                    activeTab === t ? 'bg-indigo-500/25 text-indigo-300' : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                            >
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Conteúdo de Cores e Corpo */}
+                    {activeTab === 'corpo' && (
+                        <div className="space-y-4 animate-[fadeIn_0.15s]">
+                            <div>
+                                <span class="text-[9px] font-mono text-slate-400 block uppercase mb-1">Cores Primárias e Secundárias</span>
+                                <div class="flex gap-1.5 wrap">
+                                    {COLOR_PRESETS.map(c => (
+                                        <button 
+                                            key={c.id} 
+                                            onClick={() => handleUpdateColor1(c.id)}
+                                            style={{ backgroundColor: c.id }}
+                                            className={`w-5 h-5 rounded-full border-2 ${sphereColor1 === c.id ? 'border-white' : 'border-transparent'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <span class="text-[9px] font-mono text-slate-400 block uppercase mb-1">Efeito Gradiente (Cor 2)</span>
+                                <div class="flex gap-1.5 wrap">
+                                    {COLOR_PRESETS.map(c => (
+                                        <button 
+                                            key={c.id} 
+                                            onClick={() => handleUpdateColor2(c.id)}
+                                            style={{ backgroundColor: c.id }}
+                                            className={`w-5 h-5 rounded-full border-2 ${sphereColor2 === c.id ? 'border-white' : 'border-transparent'}`}
+                                        />
+                                    ))}
+                                    <button 
+                                        onClick={() => setSphereColor2('')}
+                                        className="text-[8px] font-mono border border-red-500 text-red-400 px-1 rounded hover:bg-red-950/20"
+                                    >
+                                        Sólida
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-white/5 pt-2">
+                                <span class="text-[9px] font-mono text-slate-400 block uppercase mb-1">Acessórios de Peito</span>
+                                <div class="grid grid-cols-4 gap-1">
+                                    {BODY_PRESETS.map(b => (
+                                        <button
+                                            key={b.id}
+                                            onClick={() => setBodyType(b.id)}
+                                            className={`p-1.5 border rounded-lg text-xs flex flex-col items-center justify-center ${
+                                                bodyType === b.id ? 'bg-emerald-500/10 border-emerald-400' : 'bg-transparent border-white/5'
+                                            }`}
+                                        >
+                                            <span>{b.icon}</span>
+                                            <span class="text-[7.5px] font-semibold mt-0.5">{b.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Outras abas simplificadas para controle dos assessórios */}
+                    {activeTab === 'chapeus' && (
+                        <div className="grid grid-cols-5 gap-1.5">
+                            {HAT_PRESETS.map(h => (
+                                <button
+                                    key={h.id}
+                                    onClick={() => setHatType(h.id)}
+                                    className={`p-2 border rounded-xl text-center ${hatType === h.id ? 'bg-indigo-500/10 border-indigo-400' : 'bg-transparent border-white/5'}`}
+                                >
+                                    <span className="text-lg">{h.icon}</span>
+                                    <span className="text-[7px] block font-mono font-bold uppercase mt-1">{h.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {activeTab === 'bones' && (
+                        <div className="grid grid-cols-4 gap-1.5">
+                            {CAP_PRESETS.map(cp => (
+                                <button
+                                    key={cp.id}
+                                    onClick={() => setCapType(cp.id)}
+                                    className={`p-2 border rounded-xl text-center ${capType === cp.id ? 'bg-amber-500/10 border-amber-400' : 'bg-transparent border-white/5'}`}
+                                >
+                                    <span className="text-lg">{cp.icon}</span>
+                                    <span className="text-[7px] block font-mono font-bold uppercase mt-1">{cp.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {activeTab === 'oculos' && (
+                        <div className="grid grid-cols-5 gap-1.5">
+                            {GLASSES_PRESETS.map(g => (
+                                <button
+                                    key={g.id}
+                                    onClick={() => setGlassesType(g.id)}
+                                    className={`p-2 border rounded-xl text-center ${glassesType === g.id ? 'bg-purple-500/10 border-purple-400' : 'bg-transparent border-white/5'}`}
+                                >
+                                    <span className="text-lg">{g.icon}</span>
+                                    <span className="text-[7px] block font-mono font-bold uppercase mt-1">{g.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {activeTab === 'itens' && (
+                        <div className="grid grid-cols-6 gap-1.5">
+                            {ITEM_PRESETS.map(it => (
+                                <button
+                                    key={it.id}
+                                    onClick={() => setItemType(it.id)}
+                                    className={`p-2 border rounded-xl text-center ${itemType === it.id ? 'bg-rose-500/10 border-rose-400' : 'bg-transparent border-white/5'}`}
+                                >
+                                    <span className="text-base">{it.icon}</span>
+                                    <span className="text-[6.5px] block font-mono font-bold uppercase mt-1">{it.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- CORE APPLICATION MAIN PANEL ---
+        function App() {
+            const [orniState, setOrniState] = useState('initial');
+            
+            // Variáveis de Estilo reativas
+            const [sphereColor1, setSphereColor1] = useState('#2563eb');
+            const [sphereColor2, setSphereColor2] = useState('#a855f7');
+            const [hatType, setHatType] = useState('none');
+            const [hatColor1, setHatColor1] = useState('#2563eb');
+            const [hatColor2, setHatColor2] = useState('#a855f7');
+            const [glassesType, setGlassesType] = useState('none');
+            const [glassesColor1, setGlassesColor1] = useState('#2563eb');
+            const [glassesColor2, setGlassesColor2] = useState('#a855f7');
+            const [capType, setCapType] = useState('none');
+            const [capColor1, setCapColor1] = useState('#2563eb');
+            const [capColor2, setCapColor2] = useState('#a855f7');
+            const [itemType, setItemType] = useState('none');
+            const [itemColor1, setItemColor1] = useState('#fbbf24');
+            const [itemColor2, setItemColor2] = useState('#38bdf8');
+            const [bodyType, setBodyType] = useState('none');
+            const [bodyColor1, setBodyColor1] = useState('#ef4444');
+            const [bodyColor2, setBodyColor2] = useState('#fbbf24');
+
+            const [messages, setMessages] = useState([]);
+            const [isThinking, setIsThinking] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const [isListening, setIsListening] = useState(false);
+            const [isMicSupported, setIsMicSupported] = useState(false);
+            const [recognition, setRecognition] = useState(null);
+            const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+
+            // Verifica o suporte de gravação ao iniciar
+            useEffect(() => {
+                if (SpeechRecognition) {
+                    setIsMicSupported(true);
+                    const rec = new SpeechRecognition();
+                    rec.continuous = false;
+                    rec.interimResults = false;
+                    rec.lang = 'pt-PT';
+
+                    rec.onstart = () => setIsListening(true);
+                    rec.onresult = (e) => {
+                        const transcript = e.results[0][0].transcript;
+                        if (transcript && transcript.trim()) {
+                            handleSendMessage(transcript);
+                        }
+                    };
+                    rec.onerror = () => setIsListening(false);
+                    rec.onend = () => setIsListening(false);
+                    setRecognition(rec);
+                } else {
+                    setIsMicSupported(false);
+                }
+            }, []);
+
+            // Método Fallback Inteligente de Text-to-Speech
+            const speakText = (text) => {
+                if (typeof window === 'undefined' || !window.speechSynthesis) return;
+                window.speechSynthesis.cancel();
+
+                // Limpar asteriscos clássicos das formatações de IA
+                const cleanSpeech = text.replace(/[\*\_]/g, '');
+                const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+                
+                const voices = window.speechSynthesis.getVoices();
+                const ptVoice = voices.find(v => 
+                    v.lang.toLowerCase().startsWith('pt-pt') || 
+                    v.lang.toLowerCase().startsWith('pt-br') || 
+                    v.lang.toLowerCase().startsWith('pt')
+                );
+                if (ptVoice) utterance.voice = ptVoice;
+                
+                utterance.pitch = 1.1; // Tom de voz ligeiramente fofo da Orni
+                utterance.rate = 1.05;
+
+                utterance.onstart = () => setIsSpeaking(true);
+                utterance.onend = () => setIsSpeaking(false);
+                utterance.onerror = () => setIsSpeaking(false);
+
+                window.speechSynthesis.speak(utterance);
+            };
+
+            const handleEvolved = () => {
+                setOrniState('transitioning');
+                setTimeout(() => {
+                    setOrniState('evolved');
+                    const msg = "Olá! Eu sou a Orni. Finalmente livre e ativa! Qual é o teu nome?";
+                    setMessages([{ id: 'intro', role: 'model', text: msg, timestamp: new Date() }]);
+                    speakText(msg);
+                }, 1200);
+            };
+
+            const handleVoiceStart = () => {
+                if (!recognition) return;
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                    setIsSpeaking(false);
+                }
+                try {
+                    recognition.start();
+                } catch (e) { console.warn(e); }
+            };
+
+            const handleVoiceEnd = () => {
+                if (!recognition) return;
+                try {
+                    recognition.stop();
+                } catch (e) { console.warn(e); }
+            };
+
+            // Envia e processa as respostas da Orni!
+            const handleSendMessage = async (text) => {
+                if (!text.trim() || isThinking) return;
+
+                const userMsg = {
+                    id: `user-${Date.now()}-${Math.random()}`,
+                    role: 'user',
+                    text,
+                    timestamp: new Date()
+                };
+                setMessages(prev => [...prev, userMsg]);
+                setIsThinking(true);
+
+                try {
+                    // Podes conectar a tua API aqui. Para o modo local offline, a Orni responde de forma inteligente e direta:
+                    const localMocks = {
+                        "ola": "Olá! Que bom falar contigo! O que estás a fazer hoje?",
+                        "como estas": "Eu sinto-me fabulosa e cheia de energia! Com este visual estou pronta para conquistar o mundo virtual.",
+                        "que horas sao": `Hoje é dia ${new Date().toLocaleDateString('pt-PT')}. Podes ver a hora no teu dispositivo!`,
+                        "idade": "Não tenho idade no formato biológico, fui projetada para ser imortal e sábia!",
+                        "nome": "Chamo-me Orni!",
+                        "quem es tu": "Eu sou a tua companheira virtual brilhante em formato de Esfera!",
+                        "bom dia": "Bom dia! Vamos começar o dia cheios de disposição e sabedoria!",
+                        "boa tarde": "Boa tarde! Como está a correr a tua jornada de trabalho?"
+                    };
+
+                    const cleanQuery = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let reply = "Hum, interessante! Conta-me mais sobre isso. Eu quero aprender coisas novas!";
+
+                    // Procura resposta por palavras-chave locais
+                    for (const key in localMocks) {
+                        if (cleanQuery.includes(key)) {
+                            reply = localMocks[key];
+                            break;
+                        }
+                    }
+
+                    // Se estivemos online no ecossistema AI Studio, ele tenta comunicar com o servidor Proxy
+                    try {
+                        const res = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: text, history: messages.slice(-5) })
+                        });
+                        const data = await res.json();
+                        if (data.text) reply = data.text;
+                    } catch (e) {
+                        // Mantém a resposta simulada local caso corra fora do servidor
+                    }
+
+                    setTimeout(() => {
+                        const modelMsg = {
+                            id: `model-${Date.now()}-${Math.random()}`,
+                            role: 'model',
+                            text: reply,
+                            timestamp: new Date()
+                        };
+                        setMessages(prev => [...prev, modelMsg]);
+                        speakText(reply);
+                        setIsThinking(false);
+                    }, 800);
+
+                } catch (err) {
+                    setIsThinking(false);
+                }
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center space-y-6 w-full">
+                    {/* Fase Inicial */}
+                    {orniState === 'initial' && (
+                        <div className="text-center space-y-4 w-full flex flex-col items-center justify-center">
+                            <div className="text-center space-y-1.5 px-4">
+                                <h1 className="text-3xl font-light tracking-wider text-white">Esfera Eletrostática</h1>
+                                <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
+                                    Dá cliques na esfera azul para libertar a energia acumulada e acordar a Orni!
+                                </p>
+                            </div>
+
+                            <div className="p-10 bg-white/[0.01] border border-white/5 rounded-[40px] backdrop-blur-lg flex items-center justify-center shadow-2xl relative overflow-hidden">
+                                <OrniSphere 
+                                    state="initial" 
+                                    onEvolved={handleEvolved}
+                                    sphereColor1={sphereColor1}
+                                    sphereColor2={sphereColor2}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Fase de Transição */}
+                    {orniState === 'transitioning' && (
+                        <div className="min-h-[220px] flex flex-col justify-center items-center text-center space-y-4 bg-white/[0.02] border border-white/5 rounded-3xl p-10 max-w-sm w-full backdrop-blur-md">
+                            <div className="relative animate-spin">
+                                <div className="w-12 h-12 rounded-full border-4 border-indigo-500 border-t-transparent flex items-center justify-center shadow-lg"></div>
+                            </div>
+                            <p className="text-xs font-mono text-indigo-400 animate-pulse tracking-widest font-semibold uppercase">
+                                COMBINANDO ENERGIAS...
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Fase Evoluída (Esfera Viva "Orni" com Chat Completo!) */}
+                    {orniState === 'evolved' && (
+                        <div className="flex flex-col items-center justify-center space-y-6 w-full animate-[fadeIn_0.5s]">
+                            <div className="text-center space-y-1">
+                                <h1 className="text-4xl font-light tracking-wide text-emerald-400 font-sans">Orni</h1>
+                                <p className="text-emerald-500/60 text-[10px] tracking-widest uppercase font-mono">
+                                    Esfera Desbloqueada • Assistente Virtual Ativa
+                                </p>
+                            </div>
+
+                            <div className="p-6 bg-white/[0.01] border border-emerald-500/10 rounded-[30px] backdrop-blur-lg flex flex-col items-center justify-center shadow-2xl relative overflow-hidden w-full max-w-md">
+                                <OrniSphere
+                                    state="evolved"
+                                    onEvolved={() => {}}
+                                    onPointerDown={(e) => { e.preventDefault(); handleVoiceStart(); }}
+                                    onPointerUp={(e) => { e.preventDefault(); handleVoiceEnd(); }}
+                                    isListening={isListening}
+                                    sphereColor1={sphereColor1} sphereColor2={sphereColor2}
+                                    hatType={hatType} hatColor1={hatColor1} hatColor2={hatColor2}
+                                    glassesType={glassesType} glassesColor1={glassesColor1} glassesColor2={glassesColor2}
+                                    capType={capType} capColor1={capColor1} capColor2={capColor2}
+                                    itemType={itemType} itemColor1={itemColor1} itemColor2={itemColor2}
+                                    bodyType={bodyType} bodyColor1={bodyColor1} bodyColor2={bodyColor2}
+                                />
+
+                                <button 
+                                    onClick={() => { setOrniState('initial'); setMessages([]); }}
+                                    className="mt-4 px-4 py-1.5 bg-blue-900/20 hover:bg-blue-800/30 border border-blue-500/20 rounded-xl text-[9px] uppercase tracking-wider font-mono font-bold text-blue-300 transition"
+                                >
+                                    Reiniciar 🔄
+                                </button>
+                            </div>
+
+                            {/* Painel do Chat */}
+                            <ChatPanel 
+                                messages={messages}
+                                isThinking={isThinking}
+                                isSpeaking={isSpeaking}
+                                isListening={isListening}
+                                isMicSupported={isMicSupported}
+                                handleSendMessage={handleSendMessage}
+                            />
+                        </div>
+                    )}
+
+                    {/* Botão de Customizar flutuante por cima do rodapé */}
+                    {orniState !== 'transitioning' && (
+                        <button
+                            onClick={() => setIsCustomizerOpen(!isCustomizerOpen)}
+                            className="px-5 py-2 rounded-full border text-[10px] uppercase font-mono tracking-widest font-bold transition flex items-center gap-2 bg-slate-900/90 border-white/10 hover:bg-slate-800"
+                        >
+                            <span>{isCustomizerOpen ? 'Fechar ❌' : 'Customizar Orni 🛠️'}</span>
+                        </button>
+                    )}
+
+                    {/* Painel Customizer */}
+                    {isCustomizerOpen && orniState !== 'transitioning' && (
+                        <div className="w-full max-w-md">
+                            <SphereCustomizer
+                                sphereColor1={sphereColor1} setSphereColor1={setSphereColor1}
+                             sphereColor2={sphereColor2} setSphereColor2={setSphereColor2}
+                                hatType={hatType} setHatType={setHatType}
+                                hatColor1={hatColor1} setHatColor1={setHatColor1}
+                                hatColor2={hatColor2} setHatColor2={setHatColor2}
+                                glassesType={glassesType} setGlassesType={setGlassesType}
+                                glassesColor1={glassesColor1} setGlassesColor1={setGlassesColor1}
+                                glassesColor2={glassesColor2} setGlassesColor2={setGlassesColor2}
+                                capType={capType} setCapType={setCapType}
+                                capColor1={capColor1} setCapColor1={setCapColor1}
+                                capColor2={capColor2} setCapColor2={setCapColor2}
+                                itemType={itemType} setItemType={setItemType}
+                                itemColor1={itemColor1} setItemColor1={setItemColor1}
+                                itemColor2={itemColor2} setItemColor2={setItemColor2}
+                                bodyType={bodyType} setBodyType={setBodyType}
+                                bodyColor1={bodyColor1} setBodyColor1={setBodyColor1}
+                                bodyColor2={bodyColor2} setBodyColor2={setBodyColor2}
+                            />
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const rootObj = ReactDOM.createRoot(document.getElementById('root'));
+        rootObj.render(<App />);
+    </script>
+</body>
+  </html>
